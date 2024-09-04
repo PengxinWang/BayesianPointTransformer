@@ -1,2 +1,2 @@
 # PointNet
-reproduce and tidy up code for pointnet++
+implement and learn Point Transformer v3

@@ -1,6 +1,6 @@
 import torch
-from model.serialization.hilbert_bit import encode as hilbert_encode_
-from model.serialization.hilbert_bit import decode as hilbert_decode_
+from model.serialization.hilbert import encode as hilbert_encode_
+from model.serialization.hilbert import decode as hilbert_decode_
 
 @torch.inference_mode()
 def encode(grid_coord, batch=None, depth=16, order="z"):
