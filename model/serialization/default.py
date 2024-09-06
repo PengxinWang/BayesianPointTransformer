@@ -1,26 +1,28 @@
 import torch
-from model.serialization.hilbert import encode as hilbert_encode_
-from model.serialization.hilbert import decode as hilbert_decode_
+from .z_order import xyz2key as z_order_encode_
+from .z_order import key2xyz as z_order_decode_
+from .hilbert import encode as hilbert_encode_
+from .hilbert import decode as hilbert_decode_
+
 
 @torch.inference_mode()
 def encode(grid_coord, batch=None, depth=16, order="z"):
     assert order in {"z", "z-trans", "hilbert", "hilbert-trans"}
     if order == "z":
-        raise NotImplementedError
-        # code = z_order_encode(grid_coord, depth=depth)
+        code = z_order_encode(grid_coord, depth=depth)
     elif order == "z-trans":
-        raise NotImplementedError
-        # code = z_order_encode(grid_coord[:, [1, 0, 2]], depth=depth)
+        code = z_order_encode(grid_coord[:, [1, 0, 2]], depth=depth)
     elif order == "hilbert":
         code = hilbert_encode(grid_coord, depth=depth)
     elif order == "hilbert-trans":
-        code = hilbert_encode(grid_coord[:, [1, 0]], depth=depth)
+        code = hilbert_encode(grid_coord[:, [1, 0, 2]], depth=depth)
     else:
         raise NotImplementedError
     if batch is not None:
         batch = batch.long()
-        code = batch << depth * 2 | code
+        code = batch << depth * 3 | code
     return code
+
 
 @torch.inference_mode()
 def decode(code, depth=16, order="z"):
@@ -28,29 +30,30 @@ def decode(code, depth=16, order="z"):
     batch = code >> depth * 3
     code = code & ((1 << depth * 3) - 1)
     if order == "z":
-        pass
-        # grid_coord = z_order_decode(code, depth=depth)
+        grid_coord = z_order_decode(code, depth=depth)
     elif order == "hilbert":
         grid_coord = hilbert_decode(code, depth=depth)
     else:
         raise NotImplementedError
     return grid_coord, batch
 
+
+def z_order_encode(grid_coord: torch.Tensor, depth: int = 16):
+    x, y, z = grid_coord[:, 0].long(), grid_coord[:, 1].long(), grid_coord[:, 2].long()
+    # we block the support to batch, maintain batched code in Point class
+    code = z_order_encode_(x, y, z, b=None, depth=depth)
+    return code
+
+
+def z_order_decode(code: torch.Tensor, depth: int = 16):
+    x, y, z = z_order_decode_(code, depth=depth)
+    grid_coord = torch.stack([x, y, z], dim=-1)  # (N,  3)
+    return grid_coord
+
+
 def hilbert_encode(grid_coord: torch.Tensor, depth: int = 16):
-    return hilbert_encode_(grid_coord, num_dims=2, num_bits=depth)
+    return hilbert_encode_(grid_coord, num_dims=3, num_bits=depth)
+
 
 def hilbert_decode(code: torch.Tensor, depth: int = 16):
-    return hilbert_decode_(code, num_dims=2, num_bits=depth)
-
-if __name__=='__main__':
-    import math
-    n = 30  # number of points
-    dim = 224  # dimensions of the image
-    num_bits = int(math.log2(dim)) + 1
-
-    # Generate random points in a 32x32 grid
-    points = torch.randint(0, dim, (n, 2))
-    hilbert_code = encode(grid_coord=points, depth=num_bits, order='hilbert')
-    print(hilbert_code)
-    # points_decoded = decode(hilbert_code, depth=num_bits, order='hilbert')
-    # print(points_decoded==points)
+    return hilbert_decode_(code, num_dims=3, num_bits=depth)

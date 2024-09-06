@@ -8,7 +8,6 @@
 import torch
 from typing import Optional, Union
 
-
 class KeyLUT:
     def __init__(self):
         r256 = torch.arange(256, dtype=torch.int64)
@@ -59,9 +58,7 @@ class KeyLUT:
             z = z | ((key & (1 << (3 * i + 0))) >> (2 * i + 0))
         return x, y, z
 
-
 _key_lut = KeyLUT()
-
 
 def xyz2key(
     x: torch.Tensor,
@@ -83,6 +80,8 @@ def xyz2key(
           :attr:`b` must be the same as :attr:`x`, :attr:`y`, and :attr:`z`.
       depth (int): The depth of the shuffled key, and must be smaller than 17 (< 17).
     """
+    if depth >= 17:
+        raise ValueError(f'{depth} should be lower than or equal 16')
 
     EX, EY, EZ = _key_lut.encode_lut(x.device)
     x, y, z = x.long(), y.long(), z.long()
