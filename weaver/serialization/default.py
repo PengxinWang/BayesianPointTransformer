@@ -1,12 +1,19 @@
 import torch
-from .z_order import xyz2key as z_order_encode_
-from .z_order import key2xyz as z_order_decode_
-from .hilbert import encode as hilbert_encode_
-from .hilbert import decode as hilbert_decode_
+from z_order import xyz2key as z_order_encode_
+from z_order import key2xyz as z_order_decode_
+from hilbert import encode as hilbert_encode_
+from hilbert import decode as hilbert_decode_
 
 
 @torch.inference_mode()
 def encode(grid_coord, batch=None, depth=16, order="z"):
+    """
+    e.g.
+    >>> Args:
+        grid_coord = [[0, 0, 0], [5, 5, 5]]
+    >>> Return:
+        [0, 455]    
+    """
     assert order in {"z", "z-trans", "hilbert", "hilbert-trans"}
     if order == "z":
         code = z_order_encode(grid_coord, depth=depth)

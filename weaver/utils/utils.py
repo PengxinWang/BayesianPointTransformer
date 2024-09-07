@@ -17,8 +17,8 @@ def offset2bincount(offset):
 def offset2batch(offset):
     """
     convert offset index into batch index
-    e.g. offset = [3, 6, 9]
-         return: [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    >>> offset2batch([3, 6, 9])
+        return: [0, 0, 0, 1, 1, 1, 2, 2, 2]
     """
     bincount = offset2bincount(offset)
     return torch.arange(
@@ -30,7 +30,7 @@ def offset2batch(offset):
 def batch2offset(batch):
     """
     convert batch index into offset index
-    e.g. batch = [0, 0, 1, 1]
+    >>>  batch2offset(batch=[0, 0, 1, 1])
          return: [2, 4]
     """
     return torch.cumsum(batch.bincount(), dim=0).long()
