@@ -2,12 +2,25 @@
 - **team member: Pengxin WANG, Shenyang Tong, Jie Yan**
 
 ## File Structure
-- data
-- datasets
-- engines
-- log
-- model
-- utils
+```
+├── data/
+├── datasets/
+│   ├── dataset/
+│   ├── preprocess/
+│   └── postprocess/
+├── engines/
+├── scripts/
+├── log/
+├── weaver/
+│   ├── serialization/
+│   ├── model/
+│   ├── utils/
+│   └── pos_emb/
+└── utils/
+    ├── logger.py
+    ├── structure.py
+    └── registry.py
+```
 
 ## Curent Task:
 - [ ] Reproduce Point Transformer v3 on ModelNet40
@@ -27,3 +40,5 @@
 ### Patch Interaction
 
 ### Layer Normalization
+
+## Visualization
