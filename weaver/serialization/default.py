@@ -1,8 +1,8 @@
 import torch
-from z_order import xyz2key as z_order_encode_
-from z_order import key2xyz as z_order_decode_
-from hilbert import encode as hilbert_encode_
-from hilbert import decode as hilbert_decode_
+from .z_order import xyz2key as z_order_encode_
+from .z_order import key2xyz as z_order_decode_
+from .hilbert import encode as hilbert_encode_
+from .hilbert import decode as hilbert_decode_
 
 
 @torch.inference_mode()
@@ -64,3 +64,7 @@ def hilbert_encode(grid_coord: torch.Tensor, depth: int = 16):
 
 def hilbert_decode(code: torch.Tensor, depth: int = 16):
     return hilbert_decode_(code, num_dims=3, num_bits=depth)
+
+if __name__=='__main__':
+    test_points = torch.tensor([[0, 0, 0], [5, 5, 5]])
+    print(encode(test_points, batch=torch.tensor(1)))

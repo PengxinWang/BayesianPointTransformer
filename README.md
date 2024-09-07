@@ -3,23 +3,30 @@
 
 ## File Structure
 ```
+├── config/
 ├── data/
-├── datasets/
-│   ├── dataset/
-│   ├── preprocess/
-│   └── postprocess/
 ├── engines/
+│   ├── train.py
+│   └── test.py 
 ├── scripts/
-├── log/
+│   ├── download_data.sh
+│   ├── train.sh
+│   └── test.sh    
 ├── weaver/
+│   ├── datasets/
+│   │   ├── dataset.py
+│   │   ├── process.py
+│   │   └── transform.py
 │   ├── serialization/
 │   ├── model/
-│   ├── utils/
+│   ├── utils
+│   │   ├── register.py
+│   │   ├── logger.py
+│   │   ├── structure.py
+│   │   └── misc.py
+│   ├── structure.py
 │   └── pos_emb/
-└── utils/
-    ├── logger.py
-    ├── structure.py
-    └── registry.py
+└──log/
 ```
 
 ## Curent Task:

@@ -9,7 +9,9 @@ import torch
 import copy
 from collections.abc import Sequence, Mapping
 
-from ..utils.registry import Registry
+import sys
+sys.path.append('..')
+from utils.registry import Registry
 
 TRANSFORMS = Registry("transforms")
 

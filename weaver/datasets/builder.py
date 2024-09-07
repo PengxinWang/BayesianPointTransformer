@@ -1,4 +1,6 @@
-from ..utils.registry import Registry
+import sys
+sys.path.append('..')
+from utils.registry import Registry
 
 DATASETS = Registry("datasets")
 

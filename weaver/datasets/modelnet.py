@@ -5,9 +5,11 @@ import torch
 # import pointops
 from torch.utils.data import Dataset
 
-from ..utils.logger import get_root_logger
-from .builder import DATASETS
-from .transform import Compose
+import sys
+sys.path.append("..")
+from utils.logger import get_root_logger
+from builder import DATASETS
+from transform import Compose
 
 @DATASETS.register_module()
 class ModelNetDataset(Dataset):

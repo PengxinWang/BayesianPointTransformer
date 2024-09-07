@@ -80,8 +80,8 @@ def is_seq_of(seq, expected_type, seq_type=None):
 
     Args:
         seq (Sequence): The sequence to be checked.
-        expected_type (type): Expected type of sequence items.
-        seq_type (type, optional): Expected sequence type.
+        expected_type (type): Expected type of sequence items. e.g. int64, list
+        seq_type (type, optional): Expected sequence type. e.g. list, tuple
 
     Returns:
         bool: Whether the sequence is valid.
@@ -119,12 +119,7 @@ def import_modules_from_strings(imports, allow_failed_imports=False):
         list[module] | module | None: The imported modules.
 
     Examples:
-        >>> osp, sys = import_modules_from_strings(
-        ...     ['os.path', 'sys'])
-        >>> import os.path as osp_
-        >>> import sys as sys_
-        >>> assert osp == osp_
-        >>> assert sys == sys_
+        >>> osp, sys = import_modules_from_strings(['os.path', 'sys'])
     """
     if not imports:
         return
@@ -150,8 +145,3 @@ def import_modules_from_strings(imports, allow_failed_imports=False):
     if single_import:
         imported = imported[0]
     return imported
-
-
-class DummyClass:
-    def __init__(self):
-        pass

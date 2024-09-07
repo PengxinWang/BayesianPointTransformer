@@ -81,16 +81,19 @@ class Point(Dict):
         self["serialized_order"] = order
         self["serialized_inverse"] = inverse
 
-test_points = torch.tensor([[0.1, 0.2, 0.3], [1.0, 1.1, 1.2], [0.5, 0.6, 0.7], [0.5, .5, .5], [.6, .7, .4]])
-point = Point(
-    coord=test_points,  # Coordinates
-    grid_size=0.01,  # Grid size in meters
-    offset=torch.tensor([2,4,5]),  # Offsets
-)
-# Perform serialization
-point.serialization(order=['z','hilbert'])
+if __name__ == '__main__':
+    test_points = torch.tensor([[0.1, 0.2, 0.3], [1.0, 1.1, 1.2], [0.5, 0.6, 0.7], [0.5, .5, .5], [.6, .7, .4]])
+    point = Point(
+        coord=test_points,  
+        grid_size=0.01,  
+        offset=torch.tensor([2,4,5]),
+    )
 
-# Print out the result
-print("Serialized Code:", point["serialized_code"])
-print("Serialized Order:", point["serialized_order"])
-print("Serialized Inverse:", point["serialized_inverse"])
+    orders = ['z', 'hilbert', 'z-trans', 'hilbert-trans']
+    # Perform serialization
+    point.serialization(order=orders)
+
+    # Print out the result
+    print("Serialized Code:", point["serialized_code"])
+    print("Serialized Order:", point["serialized_order"])
+    print("Serialized Inverse:", point["serialized_inverse"])
