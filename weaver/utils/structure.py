@@ -1,17 +1,12 @@
 import torch
 from addict import Dict
 
-import sys
-sys.path.append("..")
-from serialization.default import encode, decode
-from utils import offset2batch, batch2offset
+from weaver.serialization.default import encode, decode
+from .utils import offset2batch, batch2offset
 
 class Point(Dict):
     """
-    Point Structure:
-    A Point (point cloud) in Pointcept is a dictionary(attribute dictionary) that contains various properties of
-    a batched point cloud. The property with the following names have a specific definition
-    as follows:
+    A dictionary-like structure that contains the 3D point cloud data and additional attributes.
 
     - "coord": original coordinate of point cloud;
     - "grid_coord": grid coordinate for specific grid size (related to GridSampling);
@@ -30,8 +25,6 @@ class Point(Dict):
             self["batch"] = offset2batch(self.offset)
         elif "offset" not in self.keys() and "batch" in self.keys():
             self["offset"] = batch2offset(self.batch)
-        else:
-            assert {"batch", "batch"}.issubset(self.keys())
 
     def serialization(self, order="z", depth=None, shuffle_orders=False):
         """
@@ -80,6 +73,7 @@ class Point(Dict):
         self["serialized_code"] = code
         self["serialized_order"] = order
         self["serialized_inverse"] = inverse
+        print(f'what is inverse: {inverse}')
 
 if __name__ == '__main__':
     test_points = torch.tensor([[0.1, 0.2, 0.3], [1.0, 1.1, 1.2], [0.5, 0.6, 0.7], [0.5, .5, .5], [.6, .7, .4]])
