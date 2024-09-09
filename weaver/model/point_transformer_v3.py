@@ -45,8 +45,9 @@ class RPE(torch.nn.Module):
 
 class SerializedAttention(PointModule):
     """
-    >>> self.order_index: index to indicate certain order, default=0
+    >>> self.order_index: index to indicate certain order, default=0, related to shuffle order
     >>> channels: dim of point.feat
+    >>> upcast_attention, upcast_softmax: use float32
     """
     def __init__(
         self,
@@ -90,7 +91,8 @@ class SerializedAttention(PointModule):
     def get_rel_pos(self, point, order):
         """
         get relative position inside patch
-        >>> order: array of indexes to indicate certain order
+        >>> order: indexes of point series
+            return: tensor.shape=[num_of_patch, K, K, 3], K:patch_size
         """
         K = self.patch_size
         rel_pos_key = f"rel_pos_{self.order_index}"
@@ -118,9 +120,6 @@ class SerializedAttention(PointModule):
         ):
             offset = point.offset
             bincount = offset2bincount(offset)
-            # modify the bincount_pad in the following strategy: 
-            # 1. dynamically calculate padding size with smallest binsize and lower than maximum padding size
-            # 2. padding binsize to integer multiple of pad_size
             bincount_pad = (
                 torch.div(
                     bincount + self.patch_size - 1,
@@ -181,7 +180,7 @@ class SerializedAttention(PointModule):
         C = self.channels
 
         pad, unpad, cu_seqlens = self.get_padding_and_inverse(point)
-        order = point.serialized_order[self.order_index][pad]
+        order = point.serialized_order[self.order_index][pad] # a padded series of indexes
         inverse = unpad[point.serialized_inverse[self.order_index]]
 
         # padding and reshape feat and batch for serialized point patch
@@ -223,10 +222,17 @@ class SerializedAttention(PointModule):
 
 
 if __name__ == '__main__':
+    # test code
     from weaver.utils.structure import Point
     test_Point = Point(coord=torch.tensor([[0,0,0],[1,1,1], [2,2,2]]), feat= torch.tensor([[0,0],[1,1], [2,2]], dtype=torch.float32),
                     offset=torch.tensor([1,3]), grid_size=0.1)
     test_Point.serialization()
+    print(test_Point.keys())
     test_attention = SerializedAttention(channels=2, num_heads=2, patch_size=4)
     forward_result = test_attention(test_Point)
-    print(forward_result)
+    print(type(forward_result))
+    test_pos = test_attention.get_rel_pos(point=test_Point, order=[0])
+    print(f'')
+    print(f'the output of test_pos: {test_pos}')
+    print(f'shape of pos: {test_pos.shape}, type of pos: {test_pos.dtype}')
+    print(test_pos)

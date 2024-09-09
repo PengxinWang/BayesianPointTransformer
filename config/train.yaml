@@ -1,9 +1,3 @@
-- Dataset:
-  - name: modelnet40
-  - n_classes: 40
-  - n_points: 10000
-  - fps: True
-
 - Serialization:
   - pattern: ['hilbert', 'hilbert-trans']
 

@@ -20,7 +20,7 @@ class ModelNetDataset(Dataset):
         class_names=None,
         transform=None,
         num_points=10000,
-        uniform_sampling=True,
+        uniform_sampling=False,
         save_record=True,
         test_mode=False,
         test_cfg=None,
@@ -44,11 +44,7 @@ class ModelNetDataset(Dataset):
 
         self.data_list = self.get_data_list()
         logger = get_root_logger()
-        logger.info(
-            "Totally {} x {} samples in {} set.".format(
-                len(self.data_list), self.loop, split
-            )
-        )
+        logger.info(f"Totally {len(self.data_list)} x {self.loop} samples in {split} set.")
 
         # check, prepare record
         record_name = f"modelnet40_{self.split}"
@@ -81,17 +77,17 @@ class ModelNetDataset(Dataset):
                 self.data_root, data_shape, self.data_list[data_idx] + ".txt"
             )
             data = np.loadtxt(data_path, delimiter=",").astype(np.float32)
-            # if self.num_point is not None:
-            #     if self.uniform_sampling:
-            #         with torch.no_grad():
-            #             mask = pointops.farthest_point_sampling(
-            #                 torch.tensor(data).float().cuda(),
-            #                 torch.tensor([len(data)]).long().cuda(),
-            #                 torch.tensor([self.num_point]).long().cuda(),
-            #             )
-            #         data = data[mask.cpu()]
-            #     else:
-            data = data[: self.num_point]
+            if self.num_point is not None:
+                if self.uniform_sampling:
+                    with torch.no_grad():
+                        mask = pointops.farthest_point_sampling(
+                            torch.tensor(data).float().cuda(),
+                            torch.tensor([len(data)]).long().cuda(),
+                            torch.tensor([self.num_point]).long().cuda(),
+                        )
+                    data = data[mask.cpu()]
+                else:
+                    data = data[: self.num_point]
             coord, normal = data[:, 0:3], data[:, 3:6]
             category = np.array([self.class_names[data_shape]])
             return dict(coord=coord, normal=normal, category=category)

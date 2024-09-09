@@ -73,7 +73,6 @@ class Point(Dict):
         self["serialized_code"] = code
         self["serialized_order"] = order
         self["serialized_inverse"] = inverse
-        print(f'what is inverse: {inverse}')
 
 if __name__ == '__main__':
     test_points = torch.tensor([[0.1, 0.2, 0.3], [1.0, 1.1, 1.2], [0.5, 0.6, 0.7], [0.5, .5, .5], [.6, .7, .4]])

@@ -5,16 +5,19 @@
 ```
 ├── config/
 ├── data/
-├── engines/
-│   ├── train.py
-│   └── test.py 
 ├── scripts/
 │   ├── download_data.sh
 │   ├── train.sh
 │   └── test.sh    
 ├── weaver/
+│   ├── __init__.py
+│   ├── engines/
+│   │   ├── train.py
+│   │   └── test.py 
 │   ├── datasets/
+│   │   ├── __init__.py
 │   │   ├── dataset.py
+│   │   ├── builder.py
 │   │   ├── process.py
 │   │   └── transform.py
 │   ├── serialization/
@@ -28,6 +31,9 @@
 │   └── pos_emb/
 └──log/
 ```
+
+## Note:
+- [A nice blog for registry in python](https://blog.csdn.net/weixin_44878336/article/details/133887655)
 
 ## Curent Task:
 - [ ] Reproduce Point Transformer v3 on ModelNet40
