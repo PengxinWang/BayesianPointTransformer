@@ -1,9 +1,0 @@
-- Serialization:
-  - pattern: ['hilbert', 'hilbert-trans']
-
-- Model:
-  - name: PTv3
-
-- Param:
-  - lr:
-  - b_size:

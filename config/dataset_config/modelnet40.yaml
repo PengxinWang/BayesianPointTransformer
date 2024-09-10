@@ -1,6 +1,0 @@
-- Dataset:
-  - name: modelnet40
-  - root: '/data/modelnet40_normal_resampled'
-  - n_classes: 40
-  - n_points: 10000
-  - fps: True

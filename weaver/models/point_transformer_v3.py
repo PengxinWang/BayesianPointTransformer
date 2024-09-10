@@ -14,7 +14,7 @@ from timm.models.layers import DropPath
 
 import sys
 sys.path.append('D:/PointNet/PointNet')
-from weaver.model.modules import PointModule, PointSequential
+from weaver.models.modules import PointModule, PointSequential
 from weaver.utils.utils import offset2bincount
 
 class RPE(torch.nn.Module):

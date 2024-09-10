@@ -1,6 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import inspect
+import warnings
+from functools import partial
+
 from .misc import is_seq_of
+
 
 def build_from_cfg(cfg, registry, default_args=None):
     """Build a module from configs dict.
@@ -23,7 +27,7 @@ def build_from_cfg(cfg, registry, default_args=None):
             )
     if not isinstance(registry, Registry):
         raise TypeError(
-            "registry must be an Registry object, " f"but got {type(registry)}"
+            "registry must be an mmcv.Registry object, " f"but got {type(registry)}"
         )
     if not (isinstance(default_args, dict) or default_args is None):
         raise TypeError(
@@ -44,7 +48,7 @@ def build_from_cfg(cfg, registry, default_args=None):
     elif inspect.isclass(obj_type):
         obj_cls = obj_type
     else:
-        raise TypeError(f"type must be a str or a calss(not instanciated), but got {type(obj_type)}")
+        raise TypeError(f"type must be a str or valid type, but got {type(obj_type)}")
     try:
         return obj_cls(**args)
     except Exception as e:
@@ -61,7 +65,12 @@ class Registry:
         >>> @MODELS.register_module()
         >>> class ResNet:
         >>>     pass
-        >>> resnet = MODELS.build(dict(type='ResNet'))        
+        >>> resnet = MODELS.build(dict(type='ResNet'))
+
+    Please refer to
+    https://mmcv.readthedocs.io/en/latest/understand_mmcv/registry.html for
+    advanced usage.
+
     Args:
         name (str): Registry name.
         build_func(func, optional): Build function to construct instance from
