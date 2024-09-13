@@ -1,5 +1,4 @@
 import logging
-import torch
 import torch.distributed as dist
 
 from termcolor import colored
@@ -155,10 +154,10 @@ def get_root_logger(log_file=None, log_level=logging.INFO, file_mode="a"):
     return logger
 
 
-def _log_api_usage(identifier: str):
-    """
-    Internal function used to log the usage of different detectron2 components
-    inside facebook's infra.
-    """
-    torch._C._log_api_usage_once("pointcept." + identifier)
+# def _log_api_usage(identifier: str):
+#     """
+#     Internal function used to log the usage of different detectron2 components
+#     inside facebook's infra.
+#     """
+#     torch._C._log_api_usage_once("pointcept." + identifier)
 

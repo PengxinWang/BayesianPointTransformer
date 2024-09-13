@@ -9,6 +9,8 @@ __pycache__/
 # Data
 data/
 
+# exp
+exp/
 
 # Distribution / packaging
 .Python
