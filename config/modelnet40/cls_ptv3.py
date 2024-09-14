@@ -12,7 +12,7 @@ model = dict(
     num_classes=40,
     backbone_embed_dim=512,
     backbone=dict(
-        type="PT-v3m1",
+        type="PT-v3",
         in_channels=6,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
@@ -46,7 +46,7 @@ model = dict(
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-        dict(type="LovaszLoss", mode="multiclass", loss_weight=1.0, ignore_index=-1),
+        dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
     ],
 )
 

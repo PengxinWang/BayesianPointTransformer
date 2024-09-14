@@ -29,6 +29,24 @@ class AverageMeter(object):
 
 
 def intersection_and_union(output, target, K, ignore_index=-1):
+    """
+    Args: 
+        output: output.shape=N*L, N=batch_size, L=num_of_points
+        target: target.shape=output.shape
+        K: num_of_classes
+        ignore_index: class to ignore(e.g. background)
+
+    Return:
+        area_intersection: number of intersection of each_class, len(area_interaction)=K
+
+    e.g. 
+    >>> output = [[1,2],[1,2]]
+    >>> target = [[1,2],[0,2]]
+    >>> K = 3
+    >>> return: area_intersection = [0, 1, 2]
+                area_union = [0, 2, 2]
+                area_target = [0, 1, 2]
+    """
     # 'K' classes, output and target sizes are N or N * L or N * H * W, each value in range 0 to K - 1.
     assert output.ndim in [1, 2, 3]
     assert output.shape == target.shape

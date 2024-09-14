@@ -11,7 +11,6 @@ from weaver.utils.misc import intersection_and_union_gpu
 from .default import HookBase
 from .builder import HOOKS
 
-
 @HOOKS.register_module()
 class ClsEvaluator(HookBase):
     def after_epoch(self):
