@@ -1,3 +1,12 @@
+# Data
+data/
+
+# exp
+exp/
+
+test.sh 
+train.sh 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -5,12 +14,6 @@ __pycache__/
 
 # C extensions
 *.so
-
-# Data
-data/
-
-# exp
-exp/
 
 # Distribution / packaging
 .Python

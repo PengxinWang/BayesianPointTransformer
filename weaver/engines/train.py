@@ -126,7 +126,7 @@ class Trainer(TrainerBase):
         self.val_loader = self.build_val_loader()
         self.logger.info("=> Building optimize, scheduler, scaler(amp) ...")
         self.optimizer = self.build_optimizer()
-        self.scheduler = self.build_scheduler()
+        # self.scheduler = self.build_scheduler()
         self.scaler = self.build_scaler()
         self.logger.info("=> Building hooks ...")
         self.register_hooks(self.cfg.hooks)
@@ -191,7 +191,7 @@ class Trainer(TrainerBase):
                     self.model.parameters(), self.cfg.clip_grad
                 )
             self.optimizer.step()
-            self.scheduler.step()
+            # self.scheduler.step()
         if self.cfg.empty_cache:
             torch.cuda.empty_cache()
         self.comm_info["model_output_dict"] = output_dict

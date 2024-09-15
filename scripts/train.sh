@@ -1,49 +1,20 @@
-SCRIPT_PATH=$(cd "$(dirname "$0")"; pwd -P)
-cd $(dirname "$SCRIPT_PATH")
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate MATH7224
 
 ROOT_DIR=$(pwd)
-PYTHON=python
+PYTHON=python3
 TRAIN_CODE=train.py
 
 DATASET=ModelNet40
-CONFIG=None
+CONFIG=cls_ptv3
 EXP_NAME=debug
 WEIGHT=None
 RESUME=false
 GPU=None
 
-while getopts "p:d:c:n:w:g:r:" opt; do
-  case $opt in
-    p)
-      PYTHON=$OPTARG
-      ;;
-    d)
-      DATASET=$OPTARG
-      ;;
-    c)
-      CONFIG=$OPTARG
-      ;;
-    n)
-      EXP_NAME=$OPTARG
-      ;;
-    w)
-      WEIGHT=$OPTARG
-      ;;
-    r)
-      RESUME=$OPTARG
-      ;;
-    g)
-      GPU=$OPTARG
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG"
-      ;;
-  esac
-done
-
-if [ "${NUM_GPU}" = 'None' ]
+if [ "${GPU}" = 'None' ]
 then
-  NUM_GPU=`$PYTHON -c 'import torch; print(torch.cuda.device_count())'`
+  GPU=`$PYTHON -c 'import torch; print(torch.cuda.device_count())'`
 fi
 
 echo " =========> SETTING <========="
@@ -75,15 +46,20 @@ export PYTHONPATH=./$CODE_DIR
 echo "Running code in: $PYTHONPATH"
 
 echo " =========> RUN TASK <========="
-if [ "${WEIGHT}" = "None" ]
-then
-    $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
-    --config-file "$CONFIG_DIR" \
-    --num-gpus "$GPU" \
-    --options save_path="$EXP_DIR"
-else
-    $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
-    --config-file "$CONFIG_DIR" \
-    --num-gpus "$GPU" \
-    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT"
-fi
+$PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
+--config-file "$CONFIG_DIR" \
+--num-gpus "$GPU" \
+--options save_path="$EXP_DIR"
+
+# if [ "${WEIGHT}" = "None" ]
+# then
+#     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
+#     --config-file "$CONFIG_DIR" \
+#     --num-gpus "$GPU" \
+#     --options save_path="$EXP_DIR"
+# else
+#     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
+#     --config-file "$CONFIG_DIR" \
+#     --num-gpus "$GPU" \
+#     --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT"
+# fi

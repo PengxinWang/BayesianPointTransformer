@@ -8,6 +8,7 @@ from .builder import LOSSES
 def _lovasz_grad(gt_sorted):
     """Compute gradient of the Lovasz extension w.r.t sorted errors
     See Alg. 1 in paper
+    Note: p is the number of all pixels in one batch
     """
     p = len(gt_sorted)
     gts = gt_sorted.sum()
@@ -46,7 +47,6 @@ def _lovasz_softmax(
         )
     return loss
 
-
 def _lovasz_softmax_flat(probas, labels, classes="present", class_seen=None):
     """Multi-class Lovasz-Softmax loss
     Args:
@@ -74,7 +74,7 @@ def _lovasz_softmax_flat(probas, labels, classes="present", class_seen=None):
                 class_pred = probas[:, c]
             errors = (fg - class_pred).abs()
             errors_sorted, perm = torch.sort(errors, 0, descending=True)
-            perm = perm.data
+            perm = perm.detach()
             fg_sorted = fg[perm]
             losses.append(torch.dot(errors_sorted, _lovasz_grad(fg_sorted)))
         else:
