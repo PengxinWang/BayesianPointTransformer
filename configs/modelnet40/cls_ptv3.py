@@ -47,8 +47,9 @@ model = dict(
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
         dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
+        dict(type="DiceLoss", loss_weight=1.0, ignore_index=-1),
     ],
-)
+) # class imbalance
 
 # train settings
 epoch = 300

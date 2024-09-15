@@ -11,7 +11,7 @@ from utils.logger import get_root_logger
 from builder import DATASETS
 from transform import Compose
 
-@DATASETS.register_module()
+@DATASETS.register_module('ModelNetDataset')
 class ModelNetDataset(Dataset):
     def __init__(
         self,
