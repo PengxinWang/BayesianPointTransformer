@@ -238,7 +238,7 @@ class Registry:
             if not force and name in self._module_dict:
                 raise KeyError(f"{name} is already registered " f"in {self.name}")
             self._module_dict[name] = module_class
-            print(self.module_dict)
+            # print(self.module_dict)
 
     def register_module(self, name=None, force=False, module=None):
         """Register a module.

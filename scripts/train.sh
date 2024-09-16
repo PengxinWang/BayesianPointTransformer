@@ -1,6 +1,3 @@
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate MATH7224
-
 ROOT_DIR=$(pwd)
 PYTHON=python3
 TRAIN_CODE=train.py
@@ -46,20 +43,15 @@ export PYTHONPATH=./$CODE_DIR
 echo "Running code in: $PYTHONPATH"
 
 echo " =========> RUN TASK <========="
-$PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
---config-file "$CONFIG_DIR" \
---num-gpus "$GPU" \
---options save_path="$EXP_DIR"
-
-# if [ "${WEIGHT}" = "None" ]
-# then
-#     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
-#     --config-file "$CONFIG_DIR" \
-#     --num-gpus "$GPU" \
-#     --options save_path="$EXP_DIR"
-# else
-#     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
-#     --config-file "$CONFIG_DIR" \
-#     --num-gpus "$GPU" \
-#     --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT"
-# fi
+if [ "${WEIGHT}" = "None" ]
+then
+    $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
+    --config-file "$CONFIG_DIR" \
+    --num-gpus "$GPU" \
+    --options save_path="$EXP_DIR"
+else
+    $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
+    --config-file "$CONFIG_DIR" \
+    --num-gpus "$GPU" \
+    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT"
+fi

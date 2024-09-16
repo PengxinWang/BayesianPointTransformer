@@ -11,10 +11,10 @@ from weaver.datasets import build_dataset, point_collate_fn, collate_fn
 from weaver.models import build_model
 from weaver.utils.logger import get_root_logger
 from weaver.utils.optimizer import build_optimizer
-# from weaver.utils.scheduler import build_scheduler
+from weaver.utils.scheduler import build_scheduler
 from weaver.utils.events import EventStorage, ExceptionWriter
 from weaver.utils.registry import Registry
-import weaver.utils.comm as comm
+from weaver.utils import comm
 from .hooks import HookBase, build_hooks
 from .defaults import create_ddp_model, worker_init_fn
 
@@ -126,7 +126,7 @@ class Trainer(TrainerBase):
         self.val_loader = self.build_val_loader()
         self.logger.info("=> Building optimize, scheduler, scaler(amp) ...")
         self.optimizer = self.build_optimizer()
-        # self.scheduler = self.build_scheduler()
+        self.scheduler = self.build_scheduler()
         self.scaler = self.build_scaler()
         self.logger.info("=> Building hooks ...")
         self.register_hooks(self.cfg.hooks)
@@ -191,7 +191,7 @@ class Trainer(TrainerBase):
                     self.model.parameters(), self.cfg.clip_grad
                 )
             self.optimizer.step()
-            # self.scheduler.step()
+            self.scheduler.step()
         if self.cfg.empty_cache:
             torch.cuda.empty_cache()
         self.comm_info["model_output_dict"] = output_dict
@@ -225,12 +225,10 @@ class Trainer(TrainerBase):
     def build_train_loader(self):
         train_data = build_dataset(self.cfg.data.train)
 
-        # if comm.get_world_size() > 1:
-        #     train_sampler = torch.utils.data.distributed.DistributedSampler(train_data)
-        # else:
-        #     train_sampler = None
-
-        train_sampler = None
+        if comm.get_world_size() > 1:
+            train_sampler = torch.utils.data.distributed.DistributedSampler(train_data)
+        else:
+            train_sampler = None
 
         init_fn = (
             partial(
@@ -279,11 +277,11 @@ class Trainer(TrainerBase):
     def build_optimizer(self):
         return build_optimizer(self.cfg.optimizer, self.model, self.cfg.param_dicts)
 
-    # def build_scheduler(self):
-    #     assert hasattr(self, "optimizer")
-    #     assert hasattr(self, "train_loader")
-    #     self.cfg.scheduler.total_steps = len(self.train_loader) * self.cfg.eval_epoch
-    #     return build_scheduler(self.cfg.scheduler, self.optimizer)
+    def build_scheduler(self):
+        assert hasattr(self, "optimizer")
+        assert hasattr(self, "train_loader")
+        self.cfg.scheduler.total_steps = len(self.train_loader) * self.cfg.eval_epoch
+        return build_scheduler(self.cfg.scheduler, self.optimizer)
 
     def build_scaler(self):
         scaler = torch.cuda.amp.GradScaler() if self.cfg.enable_amp else None

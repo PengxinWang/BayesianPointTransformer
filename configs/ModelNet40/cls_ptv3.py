@@ -1,7 +1,7 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
 batch_size = 32  # bs: total bs in all gpus
-num_worker = 16
+num_worker = 4  
 batch_size_val = 8
 empty_cache = False
 enable_amp = False
@@ -52,7 +52,7 @@ model = dict(
 ) # class imbalance
 
 # train settings
-epoch = 300
+epoch = 1
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
 optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)

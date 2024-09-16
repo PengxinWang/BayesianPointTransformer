@@ -9,9 +9,7 @@ import torch
 import copy
 from collections.abc import Sequence, Mapping
 
-import sys
-sys.path.append('..')
-from utils.registry import Registry
+from weaver.utils.registry import Registry
 
 TRANSFORMS = Registry("transforms")
 

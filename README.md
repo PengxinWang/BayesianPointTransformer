@@ -6,31 +6,42 @@
 ├── config/
 ├── data/
 ├── scripts/
-│   ├── download_data.sh
+│   ├── download.sh
 │   ├── train.sh
-│   └── test.sh    
-├── weaver/
-│   ├── __init__.py
-│   ├── engines/
-│   │   ├── train.py
-│   │   └── test.py 
-│   ├── datasets/
-│   │   ├── __init__.py
-│   │   ├── dataset.py
-│   │   ├── builder.py
-│   │   ├── process.py
-│   │   └── transform.py
-│   ├── serialization/
-│   ├── model/
-│   ├── utils
-│   │   ├── register.py
-│   │   ├── logger.py
-│   │   ├── structure.py
-│   │   └── misc.py
-│   ├── structure.py
-│   └── pos_emb/
-└──log/
-```
+│   └── test.sh 
+├── tools/
+│   ├── vis.py
+│   ├── train.py
+│   └── test.py
+└── weaver/   
+    ├── __init__.py
+    ├── engines/
+    │   ├── hooks/
+    │   │   ├── __init__.py
+    │   │   ├── builder.py
+    │   │   ├── default.py
+    │   │   └── evaluator.py 
+    │   ├── train.py
+    │   ├── launch.py
+    │   ├── defaults.py
+    │   ├── train.py
+    │   └── test.py 
+    ├── datasets/
+    │   ├── __init__.py
+    │   ├── dataset.py
+    │   ├── builder.py
+    │   ├── process.py
+    │   └── transform.py
+    ├── serialization/
+    ├── model/
+    └── utils
+        ├── register.py
+        ├── logger.py
+        ├── structure.py
+        └── misc.py
+
+## Preparation
+- **connect to gpu:** `srun --gres=gpu:2 --time=04:00:00 --cpus-per-task=4 --pty --mail-type=ALL bash`
 
 ## Note:
 - [A nice blog for registry in python](https://blog.csdn.net/weixin_44878336/article/details/133887655)
