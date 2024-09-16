@@ -39,6 +39,7 @@
         ├── logger.py
         ├── structure.py
         └── misc.py
+```
 
 ## Preparation
 - **connect to gpu:** `srun --gres=gpu:2 --time=04:00:00 --cpus-per-task=4 --pty --mail-type=ALL bash`
