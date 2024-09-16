@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch_scatter
 
 from weaver.models.losses import build_criteria
-from weaver.utils.structure import Point
+from weaver.models.model_utils.structure import Point
 from .builder import MODELS, build_model
 
 

@@ -1,4 +1,3 @@
-
 import torch.optim.lr_scheduler as lr_scheduler
 from .registry import Registry
 
@@ -13,14 +12,12 @@ class MultiStepLR(lr_scheduler.MultiStepLR):
         total_steps,
         gamma=0.1,
         last_epoch=-1,
-        verbose=False,
     ):
         super().__init__(
             optimizer=optimizer,
             milestones=[rate * total_steps for rate in milestones],
             gamma=gamma,
             last_epoch=last_epoch,
-            verbose=verbose,
         )
 
 @SCHEDULERS.register_module()
@@ -34,7 +31,6 @@ class MultiStepWithWarmupLR(lr_scheduler.LambdaLR):
         warmup_rate=0.05,
         warmup_scale=1e-6,
         last_epoch=-1,
-        verbose=False,
     ):
         milestones = [rate * total_steps for rate in milestones]
 
@@ -57,41 +53,37 @@ class MultiStepWithWarmupLR(lr_scheduler.LambdaLR):
             optimizer=optimizer,
             lr_lambda=multi_step_with_warmup,
             last_epoch=last_epoch,
-            verbose=verbose,
         )
 
 
 @SCHEDULERS.register_module()
 class PolyLR(lr_scheduler.LambdaLR):
-    def __init__(self, optimizer, total_steps, power=0.9, last_epoch=-1, verbose=False):
+    def __init__(self, optimizer, total_steps, power=0.9, last_epoch=-1,):
         super().__init__(
             optimizer=optimizer,
             lr_lambda=lambda s: (1 - s / (total_steps + 1)) ** power,
             last_epoch=last_epoch,
-            verbose=verbose,
         )
 
 
 @SCHEDULERS.register_module()
 class ExpLR(lr_scheduler.LambdaLR):
-    def __init__(self, optimizer, total_steps, gamma=0.9, last_epoch=-1, verbose=False):
+    def __init__(self, optimizer, total_steps, gamma=0.9, last_epoch=-1,):
         super().__init__(
             optimizer=optimizer,
             lr_lambda=lambda s: gamma ** (s / total_steps),
             last_epoch=last_epoch,
-            verbose=verbose,
         )
 
 
 @SCHEDULERS.register_module()
 class CosineAnnealingLR(lr_scheduler.CosineAnnealingLR):
-    def __init__(self, optimizer, total_steps, eta_min=0, last_epoch=-1, verbose=False):
+    def __init__(self, optimizer, total_steps, eta_min=0, last_epoch=-1,):
         super().__init__(
             optimizer=optimizer,
             T_max=total_steps,
             eta_min=eta_min,
             last_epoch=last_epoch,
-            verbose=verbose,
         )
 
 
@@ -115,7 +107,6 @@ class OneCycleLR(lr_scheduler.OneCycleLR):
         final_div_factor=1e4,
         three_phase=False,
         last_epoch=-1,
-        verbose=False,
     ):
         super().__init__(
             optimizer=optimizer,
@@ -130,7 +121,6 @@ class OneCycleLR(lr_scheduler.OneCycleLR):
             final_div_factor=final_div_factor,
             three_phase=three_phase,
             last_epoch=last_epoch,
-            verbose=verbose,
         )
 
 def build_scheduler(cfg, optimizer):

@@ -30,7 +30,7 @@ class TrainerBase:
         self.max_iter = 0
         self.comm_info = dict()
         self.data_iterator: Iterator = enumerate([])
-        # self.storage: EventStorage
+        self.storage: EventStorage
         self.writer: SummaryWriter
 
     def register_hooks(self, hooks) -> None:
@@ -118,6 +118,8 @@ class Trainer(TrainerBase):
         self.logger.info(f"Config:\n{cfg.pretty_text}")
         self.logger.info("=> Building model ...")
         self.model = self.build_model()
+        self.logger.info("=> what does model look like:")
+        self.logger.info(f"=> {self.model}")
         self.logger.info("=> Building writer ...")
         self.writer = self.build_writer()
         self.logger.info("=> Building train dataset & dataloader ...")
@@ -149,15 +151,10 @@ class Trainer(TrainerBase):
                     self.comm_info["iter"],
                     self.comm_info["input_dict"],
                 ) in self.data_iterator:
-                    # => before_step
                     self.before_step()
-                    # => run_step
                     self.run_step()
-                    # => after_step
                     self.after_step()
-                # => after epoch
                 self.after_epoch()
-            # => after train
             self.after_train()
 
     def run_step(self):

@@ -2,8 +2,8 @@ import torch
 import spconv.pytorch as spconv
 from addict import Dict
 
-from weaver.serialization import encode, decode
-from .utils import offset2batch, batch2offset
+from .serialization import encode, decode
+from .misc import offset2batch, batch2offset
 
 
 class Point(Dict):

@@ -15,8 +15,8 @@ from timm.models.layers import DropPath
 
 from weaver.models.norm.pdnorm import PDNorm
 from weaver.models.modules import PointModule, PointSequential
-from weaver.utils.utils import offset2bincount
-from weaver.utils.structure import Point
+from weaver.models.model_utils.misc import offset2bincount
+from weaver.models.model_utils.structure import Point
 from weaver.models.builder import MODELS
 
 class RPE(torch.nn.Module):

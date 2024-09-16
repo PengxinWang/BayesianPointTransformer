@@ -46,10 +46,10 @@ model = dict(
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-        dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
-        dict(type="DiceLoss", loss_weight=1.0, ignore_index=-1),
+        # dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
+        # dict(type="DiceLoss", loss_weight=1.0, ignore_index=-1),
     ],
-) # class imbalance
+)
 
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
@@ -67,7 +67,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "D:\PointNet\PointNet\data\modelnet40_normal_resampled"
+data_root = "/userhome/cs2/pxwang24/capstone/Weaver/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",

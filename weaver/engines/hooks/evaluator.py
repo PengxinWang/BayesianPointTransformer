@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 # import pointops
-# from uuid import uuid4
+from uuid import uuid4
 
 # multi-gpu training
 import weaver.utils.comm as comm

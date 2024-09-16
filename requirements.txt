@@ -10,6 +10,9 @@ scipy
 torch=2.3.1 # cuda: 11.8 pip install torch==2.3.1+cu118 torchvision==0.18.1+cu118  -f https://download.pytorch.org/whl/torch_stable.html
 timm
 torch-geometric
+
+# points
+einops
 spconv-cu118
 
 # ------------------------to install torch_scatter---------------------------- 
@@ -19,6 +22,8 @@ spconv-cu118
 torch_scatter # a lot of bug, reference: https://blog.csdn.net/sxf1061700625/article/details/136384595
 # ------------------------to install torch_scatter---------------------------- 
 
-open3d # visualization
+# visualization and logging
+open3d
 tensorboard
-einops
+SharedArray
+
