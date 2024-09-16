@@ -1,5 +1,5 @@
 # Config
-yapf # yet another python formatter
+yapf=0.40.2 # yet another python formatter
 weakref
 uuid
 

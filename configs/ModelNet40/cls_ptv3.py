@@ -52,7 +52,6 @@ model = dict(
 ) # class imbalance
 
 # train settings
-epoch = 1
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
 optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)

@@ -76,4 +76,10 @@
 
 ### Layer Normalization
 
+### Loss Function
+
+### Optimization
+- Optimizer: AdamW
+- Scheduler: OneCycleLR
+
 ## Visualization

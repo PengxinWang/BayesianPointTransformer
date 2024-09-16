@@ -93,11 +93,11 @@ class TrainerBase:
 
     def after_train(self):
         # Sync GPU before running train hooks
-        # comm.synchronize()
+        comm.synchronize()
         for h in self.hooks:
             h.after_train()
-        # if comm.is_main_process():
-        #     self.writer.close()
+        if comm.is_main_process():
+            self.writer.close()
 
 
 @TRAINERS.register_module("DefaultTrainer")
@@ -139,8 +139,8 @@ class Trainer(TrainerBase):
             for self.epoch in range(self.start_epoch, self.max_epoch):
                 # => before epoch
                 # TODO: optimize to iteration based
-                # if comm.get_world_size() > 1:
-                #     self.train_loader.sampler.set_epoch(self.epoch)
+                if comm.get_world_size() > 1:
+                    self.train_loader.sampler.set_epoch(self.epoch)
                 self.model.train()
                 self.data_iterator = enumerate(self.train_loader)
                 self.before_epoch()
