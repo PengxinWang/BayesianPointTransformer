@@ -1,10 +1,10 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 32  # bs: total bs in all gpus
+batch_size = 2 # bs: total bs in all gpus
 num_worker = 4  
-batch_size_val = 8
-empty_cache = False
-enable_amp = False
+batch_size_val = 2
+empty_cache = True
+enable_amp = True
 
 # model settings
 model = dict(

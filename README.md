@@ -82,6 +82,12 @@
     - offset = [3, 5]
     - classes = [chair, desk]
 
+### Preprocessing
+- Offset
+- potential numerical issue(amp, automatic mixed precision, applied)
+    - point.feat.dtype = torch.float16
+    - point.coord.dtype = torch.float32
+
 ### ModelNet40
 - how many classes/shape are there?
     - 40

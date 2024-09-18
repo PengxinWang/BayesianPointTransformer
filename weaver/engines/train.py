@@ -118,8 +118,6 @@ class Trainer(TrainerBase):
         self.logger.info(f"Config:\n{cfg.pretty_text}")
         self.logger.info("=> Building model ...")
         self.model = self.build_model()
-        self.logger.info("=> what does model look like:")
-        self.logger.info(f"=> {self.model}")
         self.logger.info("=> Building writer ...")
         self.writer = self.build_writer()
         self.logger.info("=> Building train dataset & dataloader ...")
@@ -147,10 +145,7 @@ class Trainer(TrainerBase):
                 self.data_iterator = enumerate(self.train_loader)
                 self.before_epoch()
                 # => run_epoch
-                for (
-                    self.comm_info["iter"],
-                    self.comm_info["input_dict"],
-                ) in self.data_iterator:
+                for (self.comm_info["iter"], self.comm_info["input_dict"],) in self.data_iterator:
                     self.before_step()
                     self.run_step()
                     self.after_step()
@@ -205,7 +200,6 @@ class Trainer(TrainerBase):
         if self.cfg.sync_bn:
             model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
         n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        # logger.info(f"Model: \n{self.model}")
         self.logger.info(f"Num params: {n_parameters}")
         model = create_ddp_model(
             model.cuda(),

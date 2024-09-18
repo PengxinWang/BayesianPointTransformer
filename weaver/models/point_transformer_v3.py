@@ -275,7 +275,6 @@ class Block(PointModule):
         super().__init__()
         self.channels = channels
         self.pre_norm = pre_norm
-
         self.cpe = PointSequential(
             spconv.SubMConv3d(
                 channels,
@@ -702,7 +701,6 @@ class PointTransformerV3(PointModule):
         point = Point(data_dict)
         point.serialization(order=self.order, shuffle_orders=self.shuffle_orders)
         point.sparsify()
-
         point = self.embedding(point)
         point = self.enc(point)
         if not self.cls_mode:
