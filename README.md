@@ -62,13 +62,20 @@
 ```
 
 ## Preparation
-- **connect to gpu:** `srun --gres=gpu:1 --time=02:00:00 --cpus-per-task=4 --pty --mail-type=ALL bash`
+- **connect to gpu:** `srun --gres=gpu:2 --time=02:00:00 --cpus-per-task=8 --pty --mail-type=ALL bash`
 
 ## Note:
 - [A nice blog for registry in python](https://blog.csdn.net/weixin_44878336/article/details/133887655)
+- do not set batch_size per cpu to 1, small bug will happen on cls_head
 
 ## Curent Task:
 - [ ] Reproduce Point Transformer v3 on ModelNet40
+    - current progress:
+        - test time augmentation disabled
+        - config: configs/ModelNet40/cls_ptv3_small.py 
+        - Current best result: mAcc: 0.8107 allAcc: 0.8833
+        - [ ] why and how mIoU is evaluated in this task?
+        - [ ] enable flash attention
 
 ## Data
 
@@ -102,8 +109,10 @@
 
 ### Data Augmentation
 - what is point cloud jittering?
-- why there are 6 consecutive random_scale() applied during test?
 - what does anisotropic mean in random_scale()?
+
+### Post Processing
+- Random_scale for 10 times for ensembling
 
 ## Config
 ### base config: default_runtime.py
@@ -114,9 +123,14 @@
 - **mix_prob:**
 - **param_dicts:** allow lr scale to certain param groups
 
+## Model Structure
+- **Model size**
+    - (cls_ptv3_base.py) n_params: about 40M
+    - (cls_ptv3_small.py) n_params: about 9M(9792296)
+    
 ## Methods
 ### Serialization
-#### Hilbert encoding and decoding algorithm
+- Hilbert encoding and decoding algorithm
 
 ### Positional Embedding
 - **RPE(Relative Positional Embedding):**
@@ -132,8 +146,19 @@
 ### Loss Function
 
 ### Optimization
-- Optimizer: AdamW
+- Optimizer: SGD, Adam, AdamW
+    - AdamW
+
+- Param Group: speicify different learning hparam setting(lr, weight_decay, etc.) to different param groups
+    - **lr:** default=0.001, "block"=0.0001 
+    - **weight_decay:** default=0.01
+
 - Scheduler: OneCycleLR
 - Scaler: for calibrating precision between different GPUs
+- train_epochs: 300(default), 6(pilot)
+
+## Evaluation
+### Shape Classification
+- metrics: mAcc, allAcc
 
 ## Visualization

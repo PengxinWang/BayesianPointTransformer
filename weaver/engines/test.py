@@ -89,7 +89,7 @@ class TesterBase:
             test_dataset,
             batch_size=self.cfg.batch_size_test_per_gpu,
             shuffle=False,
-            num_workers=self.cfg.batch_size_test_per_gpu,
+            num_workers=self.cfg.num_worker,
             pin_memory=True,
             sampler=test_sampler,
             collate_fn=self.__class__.collate_fn,
@@ -101,7 +101,7 @@ class TesterBase:
 
     @staticmethod
     def collate_fn(batch):
-        raise collate_fn(batch)
+        return collate_fn(batch)
 
 
 @TESTERS.register_module()
@@ -354,7 +354,7 @@ class ClsTester(TesterBase):
         target_meter = AverageMeter()
         self.model.eval()
 
-        for i, input_dict in enumerate(self.test_loader):
+        for i, input_dict in enumerate(self.test_loader):       
             for key in input_dict.keys():
                 if isinstance(input_dict[key], torch.Tensor):
                     input_dict[key] = input_dict[key].cuda(non_blocking=True)
@@ -425,12 +425,11 @@ class ClsTester(TesterBase):
 class ClsVotingTester(TesterBase):
     def __init__(
         self,
-        num_repeat=100,
         metric="allAcc",
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.num_repeat = num_repeat
+        self.num_repeat = self.cfg.test.num_repeat
         self.metric = metric
         self.best_idx = 0
         self.best_record = None
@@ -438,8 +437,8 @@ class ClsVotingTester(TesterBase):
 
     def test(self):
         for i in range(self.num_repeat):
-            logger = get_root_logger()
-            logger.info(f">>>>>>>>>>>>>>>> Start Evaluation {i + 1} >>>>>>>>>>>>>>>>")
+            self.logger.info(f">>>>>>>>>>>>>>>> Start Evaluation {i + 1} >>>>>>>>>>>>>>>>")
+            self.logger.info(f'num_repeat: {self.num_repeat}')
             record = self.test_once()
             if comm.is_main_process():
                 if record[self.metric] > self.best_metric:
@@ -449,19 +448,19 @@ class ClsVotingTester(TesterBase):
                 info = f"Current best record is Evaluation {i + 1}: "
                 for m in self.best_record.keys():
                     info += f"{m}: {self.best_record[m]:.4f} "
-                logger.info(info)
+                self.logger.info(info)
 
     def test_once(self):
-        logger = get_root_logger()
         batch_time = AverageMeter()
         intersection_meter = AverageMeter()
         target_meter = AverageMeter()
         record = {}
         self.model.eval()
 
-        for idx, data_dict in enumerate(self.test_loader):
+        for idx, data_dicts in enumerate(self.test_loader):
+            # data_dicts is a list of data_dict, len(data_dicts)=batch_size
             end = time.time()
-            data_dict = data_dict[0]  # current assume batch size is 1
+            data_dict = data_dicts[0]  # current assume batch size is 1
             voting_list = data_dict.pop("voting_list")
             category = data_dict.pop("category")
             data_name = data_dict.pop("name")
@@ -491,11 +490,10 @@ class ClsVotingTester(TesterBase):
             acc = sum(intersection) / (sum(target) + 1e-10)
             m_acc = np.mean(intersection_meter.sum / (target_meter.sum + 1e-10))
             batch_time.update(time.time() - end)
-            logger.info(
-                "Test: {} [{}/{}] "
-                "Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) "
+            self.logger.info(
+                "Test: [{}/{}] "
+                "Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f}) "
                 "Accuracy {acc:.4f} ({m_acc:.4f}) ".format(
-                    data_name,
                     idx + 1,
                     len(self.test_loader),
                     batch_time=batch_time,
@@ -504,7 +502,7 @@ class ClsVotingTester(TesterBase):
                 )
             )
 
-        logger.info("Syncing ...")
+        self.logger.info("Syncing ...")
         comm.synchronize()
         record_sync = comm.gather(record, dst=0)
 
@@ -522,9 +520,9 @@ class ClsVotingTester(TesterBase):
             mAcc = np.mean(accuracy_class)
             allAcc = sum(intersection) / (sum(target) + 1e-10)
 
-            logger.info("Val result: mAcc/allAcc {:.4f}/{:.4f}".format(mAcc, allAcc))
+            self.logger.info("Val result: mAcc/allAcc {:.4f}/{:.4f}".format(mAcc, allAcc))
             for i in range(self.cfg.data.num_classes):
-                logger.info(
+                self.logger.info(
                     "Class_{idx} - {name} Result: iou/accuracy {accuracy:.4f}".format(
                         idx=i,
                         name=self.cfg.data.names[i],

@@ -37,12 +37,13 @@ class ModelNetDataset(Dataset):
         self.test_mode = test_mode
         self.test_cfg = test_cfg if test_mode else None
         if test_mode:
+            self.voting = self.test_cfg.voting
             self.post_transform = Compose(self.test_cfg.post_transform)
             self.aug_transform = [Compose(aug) for aug in self.test_cfg.aug_transform]
 
         self.data_list = self.get_data_list()
-        logger = get_root_logger()
-        logger.info(f"Totally {len(self.data_list)} x {self.loop} samples in {split} set.")
+        self.logger = get_root_logger()
+        self.logger.info(f"Totally {len(self.data_list)} x {self.loop} samples in {split} set.")
 
         # check, prepare record
         record_name = f"modelnet40_{self.split}"
@@ -52,14 +53,14 @@ class ModelNetDataset(Dataset):
                 record_name += "_uniform"
         record_path = os.path.join(self.data_root, f"{record_name}.pth")
         if os.path.isfile(record_path):
-            logger.info(f"Loading record: {record_name} ...")
+            self.logger.info(f"Loading record: {record_name} ...")
             self.data = torch.load(record_path)
         else:
-            logger.info(f"Preparing record: {record_name} ...")
+            self.logger.info(f"Preparing record: {record_name} ...")
             self.data = {}
             for idx in range(len(self.data_list)):
                 data_name = self.data_list[idx]
-                logger.info(f"Parsing data [{idx}/{len(self.data_list)}]: {data_name}")
+                self.logger.info(f"Parsing data [{idx}/{len(self.data_list)}]: {data_name}")
                 self.data[data_name] = self.get_data(idx)
             if save_record:
                 torch.save(self.data, record_path)
@@ -119,16 +120,20 @@ class ModelNetDataset(Dataset):
     def prepare_test_data(self, idx):
         assert idx < len(self.data_list)
         data_dict = self.get_data(idx)
-        category = data_dict.pop("category")
         data_dict = self.transform(data_dict)
-        data_dict_list = []
-        for aug in self.aug_transform:
-            data_dict_list.append(aug(deepcopy(data_dict)))
-        for i in range(len(data_dict_list)):
-            data_dict_list[i] = self.post_transform(data_dict_list[i])
-        data_dict = dict(
-            voting_list=data_dict_list,
-            category=category,
-            name=self.get_data_name(idx),
-        )
+        category = data_dict.pop("category")
+        if self.voting:
+            voting_list = []
+            for aug in self.aug_transform:
+                voting_list.append(aug(deepcopy(data_dict)))
+            for i in range(len(voting_list)):
+                voting_list[i] = self.post_transform(voting_list[i])
+            data_dict = dict(
+                voting_list=voting_list,
+                category=category,
+                name=self.get_data_name(idx),
+            )
+        else:
+            data_dict["category"] = category
+            data_dict = self.post_transform(data_dict)
         return data_dict

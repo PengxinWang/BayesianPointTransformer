@@ -76,14 +76,6 @@ class InformationWriter(HookBase):
 
     def before_step(self):
         self.curr_iter += 1
-        # MSC pretrain do not have offset information. Comment the code for support MSC
-        # info = "Train: [{epoch}/{max_epoch}][{iter}/{max_iter}] " \
-        #        "Scan {batch_size} ({points_num}) ".format(
-        #     epoch=self.trainer.epoch + 1, max_epoch=self.trainer.max_epoch,
-        #     iter=self.trainer.comm_info["iter"], max_iter=len(self.trainer.train_loader),
-        #     batch_size=len(self.trainer.comm_info["input_dict"]["offset"]),
-        #     points_num=self.trainer.comm_info["input_dict"]["offset"][-1]
-        # )
         info = "Train: [{epoch}/{max_epoch}][{iter}/{max_iter}] ".format(
             epoch=self.trainer.epoch + 1,
             max_epoch=self.trainer.max_epoch,

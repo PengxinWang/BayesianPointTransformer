@@ -1,9 +1,10 @@
+cd $(dirname $(dirname "$0")) || exit
 ROOT_DIR=$(pwd)
-PYTHON=python3
+PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=ModelNet40
-CONFIG=cls_ptv3
+CONFIG=cls_ptv3_small
 EXP_NAME=debug
 WEIGHT=None
 RESUME=false
@@ -17,7 +18,6 @@ fi
 echo " =========> SETTING <========="
 echo "ROOT_DIR: $ROOT_DIR"
 echo "Experiment name: $EXP_NAME"
-echo "Python interpreter dir: $PYTHON"
 echo "Dataset: $DATASET"
 echo "Config: $CONFIG"
 echo "GPU Num: $GPU"

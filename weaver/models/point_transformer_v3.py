@@ -705,10 +705,4 @@ class PointTransformerV3(PointModule):
         point = self.enc(point)
         if not self.cls_mode:
             point = self.dec(point)
-        # else:
-        #     point.feat = torch_scatter.segment_csr(
-        #         src=point.feat,
-        #         indptr=nn.functional.pad(point.offset, (1, 0)),
-        #         reduce="mean",
-        #     )
         return point

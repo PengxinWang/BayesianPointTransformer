@@ -46,25 +46,17 @@ class TrainerBase:
 
     def train(self):
         with EventStorage() as self.storage:
-            # => before train
             self.before_train()
             for self.epoch in range(self.start_epoch, self.max_epoch):
-                # => before epoch
                 self.before_epoch()
-                # => run_epoch
                 for (
                     self.comm_info["iter"],
                     self.comm_info["input_dict"],
                 ) in self.data_iterator:
-                    # => before_step
                     self.before_step()
-                    # => run_step
                     self.run_step()
-                    # => after_step
                     self.after_step()
-                # => after epoch
                 self.after_epoch()
-            # => after train
             self.after_train()
 
     def before_train(self):

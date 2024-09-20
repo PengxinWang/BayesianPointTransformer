@@ -5,7 +5,6 @@ from weaver.models.losses import build_criteria
 from weaver.models.model_utils.structure import Point
 from .builder import MODELS, build_model
 
-
 @MODELS.register_module()
 class DefaultSegmentor(nn.Module):
     def __init__(self, backbone=None, criteria=None):
@@ -102,18 +101,12 @@ class DefaultClassifier(nn.Module):
     def forward(self, input_dict):
         point = Point(input_dict)
         point = self.backbone(point)
-        # Backbone added after v1.5.0 return Point instead of feat
-        # And after v1.5.0 feature aggregation for classification operated in classifier
-        # TODO: remove this part after make all backbone return Point only.
-        if isinstance(point, Point):
-            point.feat = torch_scatter.segment_csr(
+        point.feat = torch_scatter.segment_csr(
                 src=point.feat,
                 indptr=nn.functional.pad(point.offset, (1, 0)),
                 reduce="mean",
-            )
-            feat = point.feat
-        else:
-            feat = point
+                )
+        feat = point.feat
         cls_logits = self.cls_head(feat)
         if self.training:
             loss = self.criteria(cls_logits, input_dict["category"])

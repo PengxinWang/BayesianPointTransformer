@@ -10,9 +10,7 @@ from weaver.engines.launch import launch
 def main_worker(cfg):
     cfg = default_setup(cfg)
     trainer = TRAINERS.build(dict(type=cfg.train.type, cfg=cfg))
-    print(f'-------------trainer successfully built----------------')
     trainer.train()
-    print(f'-------------train method successfully called----------------')
 
 
 def main():

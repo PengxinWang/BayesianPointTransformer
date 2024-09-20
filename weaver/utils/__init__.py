@@ -6,6 +6,4 @@ from .misc import *
 from .optimizer import *
 from .path import *
 from .env import *
-from .utils import *
 from .events import *
-from .structure import *
