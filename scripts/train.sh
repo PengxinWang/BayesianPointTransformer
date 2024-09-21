@@ -5,7 +5,7 @@ TRAIN_CODE=train.py
 
 DATASET=ModelNet40
 CONFIG=cls_ptv3_small
-EXP_NAME=debug
+EXP_NAME=cls_ptv3_small
 WEIGHT=None
 RESUME=false
 GPU=None

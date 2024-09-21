@@ -5,7 +5,7 @@ TEST_CODE=test.py
 
 DATASET=ModelNet40
 CONFIG=cls_ptv3_small
-EXP_NAME=cls_ptv3_small
+EXP_NAME=vis_model
 WEIGHT=model_best
 GPU=None
 

@@ -385,7 +385,7 @@ class ClsTester(TesterBase):
 
             logger.info(
                 "Test: [{}/{}] "
-                "Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) "
+                "Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f}) "
                 "Accuracy {accuracy:.4f} ".format(
                     i + 1,
                     len(self.test_loader),
@@ -400,7 +400,7 @@ class ClsTester(TesterBase):
         mAcc = np.mean(accuracy_class)
         allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
         logger.info(
-            "Val result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.".format(
+            "Eval result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.".format(
                 mIoU, mAcc, allAcc
             )
         )

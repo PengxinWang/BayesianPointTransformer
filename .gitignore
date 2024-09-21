@@ -4,10 +4,16 @@ data/
 # exp
 exp/
 
-test.sh 
-train.sh
 env_checker.py
-test.py 
+
+# misc
+.vscode/
+
+
+
+
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

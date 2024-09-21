@@ -71,13 +71,15 @@
 ## Curent Task:
 - [ ] Reproduce Point Transformer v3 on ModelNet40
     - current progress:
-        - test time augmentation disabled
-        - config: configs/ModelNet40/cls_ptv3_small.py 
-        - Current best result: mAcc: 0.8107 allAcc: 0.8833
+        - config: configs/ModelNet40/cls_ptv3_small.py
+            - Val result: mIoU/mAcc/allAcc 0.7377/0.8217/0.8861
+        - test time augmentation disabled 
         - [ ] why and how mIoU is evaluated in this task?
         - [ ] enable flash attention
 
 ## Data
+
+### Data Example
 
 ### General Setting
 - Point Module: A Dict(addict.Dict) storing necessary information of a batch of point cloud data 
@@ -94,6 +96,7 @@
 - potential numerical issue(amp, automatic mixed precision, applied)
     - point.feat.dtype = torch.float16
     - point.coord.dtype = torch.float32
+    - in flash attention, params are processed in half precision
 
 ### ModelNet40
 - how many classes/shape are there?
@@ -102,7 +105,8 @@
     - trainset: 9843
     - val/testset: 2468
 - how many points are sampled in each point cloud?
-    - after processing: 10000 points
+    - raw: 10000 points
+    - processed: 
 - what is the format of raw data?
     - raw: .txt
     - processed: .pth
@@ -110,9 +114,10 @@
 ### Data Augmentation
 - what is point cloud jittering?
 - what does anisotropic mean in random_scale()?
+- mixed3D
 
 ### Post Processing
-- Random_scale for 10 times for ensembling
+- Random_scale for 10 times for ensembling(TTA)
 
 ## Config
 ### base config: default_runtime.py
