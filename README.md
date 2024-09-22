@@ -30,7 +30,7 @@
     - offset: index to separate point clouds
 
 - **Offset**: for point cloud data, it's actually consisted of a batch of point cloud, using offset to indicate separation
-    - points = [pc1, pc1, pc1, pc2, pc2]
+    - points = [pt1, pt2, pt3, pt4, pt5]
     - offset = [3, 5]
     - classes = [chair, desk]
 
@@ -53,8 +53,11 @@
     - processed: 
 - what is the format of raw data?
     - raw: .txt
-    - raw scale: [-1,1]
     - processed: .pth
+- scale of points
+    - raw scale: [-1,1]
+    - GridSample: gird_size=0.05
+
 
 ### Data Augmentation
 - what is point cloud jittering?

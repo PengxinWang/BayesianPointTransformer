@@ -33,7 +33,7 @@ class TesterBase:
         )
         self.logger.info("=> Loading config ...")
         self.cfg = cfg
-        self.verbose = verbose
+        self.verbose = cfg.test.verbose
         if self.verbose:
             self.logger.info(f"Save path: {cfg.save_path}")
             self.logger.info(f"Config:\n{cfg.pretty_text}")

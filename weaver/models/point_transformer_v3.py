@@ -618,6 +618,7 @@ class PointTransformerV3(PointModule):
                         stride=stride[s - 1],
                         norm_layer=bn_layer,
                         act_layer=act_layer,
+                        shuffle_orders=shuffle_orders,
                     ),
                     name="down",
                 )
@@ -701,6 +702,7 @@ class PointTransformerV3(PointModule):
         point = Point(data_dict)
         point.serialization(order=self.order, shuffle_orders=self.shuffle_orders)
         point.sparsify()
+        exit()
         point = self.embedding(point)
         point = self.enc(point)
         if not self.cls_mode:

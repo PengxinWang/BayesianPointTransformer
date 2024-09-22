@@ -5,7 +5,6 @@ from addict import Dict
 from .serialization import encode, decode
 from .misc import offset2batch, batch2offset
 
-
 class Point(Dict):
     """
     Point Structure of Pointcept
@@ -55,24 +54,11 @@ class Point(Dict):
             self["grid_coord"] = torch.div(
                 self.coord - self.coord.min(0)[0], self.grid_size, rounding_mode="trunc"
             ).int()
-
         if depth is None:
-            # Adaptive measure the depth of serialization cube (length = 2 ^ depth)
             depth = int(self.grid_coord.max()).bit_length()
         self["serialized_depth"] = depth
-        # Maximum bit length for serialization code is 63 (int64)
         assert depth * 3 + len(self.offset).bit_length() <= 63
-        # Here we follow OCNN and set the depth limitation to 16 (48bit) for the point position.
-        # Although depth is limited to less than 16, we can encode a 655.36^3 (2^16 * 0.01) meter^3
-        # cube with a grid size of 0.01 meter. We consider it is enough for the current stage.
-        # We can unlock the limitation by optimizing the z-order encoding function if necessary.
         assert depth <= 16
-
-        # The serialization codes are arranged as following structures:
-        # [Order1 ([n]),
-        #  Order2 ([n]),
-        #   ...
-        #  OrderN ([n])] (k, n)
         code = [
             encode(self.grid_coord, self.batch, depth, order=order_) for order_ in order
         ]
@@ -92,9 +78,9 @@ class Point(Dict):
             order = order[perm]
             inverse = inverse[perm]
 
-        self["serialized_code"] = code
-        self["serialized_order"] = order
-        self["serialized_inverse"] = inverse
+        self["serialized_code"] = code           # code to indicate order
+        self["serialized_order"] = order         # [index_of_first_point, index_of_second_point, ...]
+        self["serialized_inverse"] = inverse     # inverse[index_of_first_point] = 0
 
     def sparsify(self, pad=96):
         """
@@ -109,20 +95,16 @@ class Point(Dict):
         """
         assert {"feat", "batch"}.issubset(self.keys())
         if "grid_coord" not in self.keys():
-            # if you don't want to operate GridSampling in data augmentation,
-            # please add the following augmentation into your pipline:
-            # dict(type="Copy", keys_dict={"grid_size": 0.01}),
-            # (adjust `grid_size` to what your want)
             assert {"grid_size", "coord"}.issubset(self.keys())
             self["grid_coord"] = torch.div(
                 self.coord - self.coord.min(0)[0], self.grid_size, rounding_mode="trunc"
             ).int()
+        
         if "sparse_shape" in self.keys():
             sparse_shape = self.sparse_shape
         else:
-            sparse_shape = torch.add(
-                torch.max(self.grid_coord, dim=0).values, pad
-            ).tolist()
+            sparse_shape = torch.add(torch.max(self.grid_coord, dim=0).values, pad).tolist()
+
         sparse_conv_feat = spconv.SparseConvTensor(
             features=self.feat,
             indices=torch.cat(
@@ -132,7 +114,7 @@ class Point(Dict):
             batch_size=self.batch[-1].tolist() + 1,
         )
         self["sparse_shape"] = sparse_shape
-        self["sparse_conv_feat"] = sparse_conv_feat
+        self["sparse_conv_feat"] = sparse_conv_feat   
 
     # def octreetization(self, depth=None, full_depth=None):
     #     """
