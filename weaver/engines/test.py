@@ -376,16 +376,15 @@ class ClsTester(TesterBase):
                 union.cpu().numpy(),
                 target.cpu().numpy(),
             )
-            intersection_meter.update(intersection), union_meter.update(
-                union
-            ), target_meter.update(target)
-
+            intersection_meter.update(intersection)
+            union_meter.update(union)
+            target_meter.update(target)
             accuracy = sum(intersection_meter.val) / (sum(target_meter.val) + 1e-10)
             batch_time.update(time.time() - end)
 
             logger.info(
                 "Test: [{}/{}] "
-                "Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f}) "
+                "Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) "
                 "Accuracy {accuracy:.4f} ".format(
                     i + 1,
                     len(self.test_loader),
@@ -400,7 +399,7 @@ class ClsTester(TesterBase):
         mAcc = np.mean(accuracy_class)
         allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
         logger.info(
-            "Eval result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.".format(
+            "Val result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.".format(
                 mIoU, mAcc, allAcc
             )
         )

@@ -51,7 +51,7 @@ class ClsEvaluator(HookBase):
             self.trainer.storage.put_scalar("val_target", target)
             self.trainer.storage.put_scalar("val_loss", loss.item())
             self.trainer.logger.info(
-                "Test: [{iter}/{max_iter}] "
+                "Val: [{iter}/{max_iter}] "
                 "Loss {loss:.4f} ".format(
                     iter=i + 1, max_iter=len(self.trainer.val_loader), loss=loss.item()
                 )
