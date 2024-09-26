@@ -120,15 +120,7 @@ class SemSegTester(TesterBase):
         save_path = os.path.join(self.cfg.save_path, "result")
         make_dirs(save_path)
         # create submit folder only on main process
-        if (
-            self.cfg.data.test.type == "ScanNetDataset"
-            or self.cfg.data.test.type == "ScanNet200Dataset"
-            or self.cfg.data.test.type == "ScanNetPPDataset"
-        ) and comm.is_main_process():
-            make_dirs(os.path.join(save_path, "submit"))
-        elif (
-            self.cfg.data.test.type == "SemanticKITTIDataset" and comm.is_main_process()
-        ):
+        if (self.cfg.data.test.type == "ScanNetDataset" or self.cfg.data.test.type == "ScanNet200Dataset" or self.cfg.data.test.type == "ScanNetPPDataset" or self.cfg.data.test.type == "SemanticKITTIDataset") and comm.is_main_process():
             make_dirs(os.path.join(save_path, "submit"))
         elif self.cfg.data.test.type == "NuScenesDataset" and comm.is_main_process():
             import json
@@ -171,9 +163,7 @@ class SemSegTester(TesterBase):
                 pred = torch.zeros((segment.size, self.cfg.data.num_classes)).cuda()
                 for i in range(len(fragment_list)):
                     fragment_batch_size = 1
-                    s_i, e_i = i * fragment_batch_size, min(
-                        (i + 1) * fragment_batch_size, len(fragment_list)
-                    )
+                    s_i, e_i = i * fragment_batch_size, min((i + 1)*fragment_batch_size, len(fragment_list))
                     input_dict = collate_fn(fragment_list[s_i:e_i])
                     for key in input_dict.keys():
                         if isinstance(input_dict[key], torch.Tensor):
@@ -207,10 +197,7 @@ class SemSegTester(TesterBase):
                     pred = pred[data_dict["inverse"]]
                     segment = data_dict["origin_segment"]
                 np.save(pred_save_path, pred)
-            if (
-                self.cfg.data.test.type == "ScanNetDataset"
-                or self.cfg.data.test.type == "ScanNet200Dataset"
-            ):
+            if (self.cfg.data.test.type == "ScanNetDataset" or self.cfg.data.test.type == "ScanNet200Dataset"):
                 np.savetxt(
                     os.path.join(save_path, "submit", "{}.txt".format(data_name)),
                     self.test_loader.dataset.class2id[pred].reshape([-1, 1]),

@@ -3,9 +3,9 @@ ROOT_DIR=$(pwd)
 PYTHON=python3
 TEST_CODE=test.py
 
-DATASET=ModelNet40
-CONFIG=cls_ptv3_small
-EXP_NAME=vis_model
+DATASET=S3DIS
+CONFIG=semseg_ptv3_small
+EXP_NAME=semseg_ptv3_small
 WEIGHT=model_best
 GPU=None
 

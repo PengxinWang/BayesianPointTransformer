@@ -58,6 +58,13 @@
     - raw scale: [-1,1]
     - GridSample: gird_size=0.05
 
+### S3DIS
+- download
+    - fill out the [Google Form](https://docs.google.com/forms/d/e/1FAIpQLScDimvNMCGhy_rmBA2gHfDu3naktRm6A8BPwAWWDv-Uhm6Shw/viewform?c=0&w=1)
+    - [Paper](https://ieeexplore.ieee.org/document/7780539)
+- data
+
+
 
 ### Data Augmentation
 - what is point cloud jittering?
@@ -80,6 +87,7 @@
 - **Model size**
     - (cls_ptv3_base.py) n_params: about 40M
     - (cls_ptv3_small.py) n_params: about 9M(9792296)
+    - (semseg_ptv3_small.py) n_params: about 10M(10379109)
     
 ## Methods
 ### Serialization
@@ -175,3 +183,12 @@
 - A possible improvement for sparse convolution: [Minkov Engine](https://github.com/NVIDIA/MinkowskiEngine)
 
 - do not set batch_size per cpu to 1, small bug will happen on cls_head
+
+- A new paper to read: [superpoint graph clustering](https://arxiv.org/pdf/2401.06704)
+
+- How to infuse 2D feature to 3D, and how does it help? [2D fusion](https://www.bilibili.com/read/cv33456793/)
+
+- [PointNet BNN](https://github.com/biophase/PointNet-BNN)
+
+- [Some people work on bayesian deep learning](https://www.x-mol.com/paper/1788682254484697088/t)
+

@@ -6,7 +6,6 @@ import torch.nn as nn
 import spconv.pytorch as spconv
 import torch_scatter
 from timm.models.layers import DropPath
-
 # try:
 #     import flash_attn
 # except ImportError:
@@ -18,6 +17,7 @@ from weaver.models.modules import PointModule, PointSequential
 from weaver.models.model_utils.misc import offset2bincount
 from weaver.models.model_utils.structure import Point
 from weaver.models.builder import MODELS
+from weaver.utils.logger import get_root_logger
 
 class RPE(torch.nn.Module):
     """
@@ -107,20 +107,10 @@ class SerializedAttention(PointModule):
 
     @torch.no_grad()
     def get_padding_and_inverse(self, point):
-        """
-        handle padding and unpadding of point cloud data for collation
-        points.pad = 
-        points.unpad = 
-        points.cu_seqlens_key(cumulative seqlen) = 
-        """
         pad_key = "pad"
         unpad_key = "unpad"
         cu_seqlens_key = "cu_seqlens_key"
-        if (
-            pad_key not in point.keys()
-            or unpad_key not in point.keys()
-            or cu_seqlens_key not in point.keys()
-        ):
+        if (pad_key not in point.keys() or unpad_key not in point.keys() or cu_seqlens_key not in point.keys()):
             offset = point.offset
             bincount = offset2bincount(offset)
             bincount_pad = (
@@ -171,8 +161,6 @@ class SerializedAttention(PointModule):
         return point[pad_key], point[unpad_key], point[cu_seqlens_key]
 
     def forward(self, point):
-        """
-        """
         if not self.enable_flash:
             self.patch_size = min(
                 offset2bincount(point.offset).min().tolist(), self.patch_size_max
@@ -183,12 +171,11 @@ class SerializedAttention(PointModule):
         C = self.channels
 
         pad, unpad, cu_seqlens = self.get_padding_and_inverse(point)
-        order = point.serialized_order[self.order_index][pad] # a padded series of indexes
+        order = point.serialized_order[self.order_index][pad]
         inverse = unpad[point.serialized_inverse[self.order_index]]
 
         # padding and reshape feat and batch for serialized point patch
         qkv = self.qkv(point.feat)[order]
-
         if not self.enable_flash:
             # encode and reshape qkv: (N', K, 3, H, C') => (3, N', H, K, C')
             q, k, v = (
@@ -702,7 +689,6 @@ class PointTransformerV3(PointModule):
         point = Point(data_dict)
         point.serialization(order=self.order, shuffle_orders=self.shuffle_orders)
         point.sparsify()
-        exit()
         point = self.embedding(point)
         point = self.enc(point)
         if not self.cls_mode:

@@ -14,7 +14,12 @@ conda install sharedarray tensorboard tensorboardx yapf addict einops scipy plyf
 
 conda install pytorch-cluster pytorch-scatter pytorch-sparse -c pyg -y
 pip install torch-geometric spconv-cu113 open3D
-
+# -----------------------------------------------------------------
+pip install flash_atten
+# git clone https://github.com/Dao-AILab/flash-attention.git
+# cd flash-attention
+# python setup.py install
+# -----------------------------------------------------------------
 
 # # weaver: floating number core dump, unknown reason
 # # py311
