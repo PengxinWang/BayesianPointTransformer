@@ -120,11 +120,13 @@ class SemSegTester(TesterBase):
         save_path = os.path.join(self.cfg.save_path, "result")
         make_dirs(save_path)
         # create submit folder only on main process
-        if (self.cfg.data.test.type == "ScanNetDataset" or self.cfg.data.test.type == "ScanNet200Dataset" or self.cfg.data.test.type == "ScanNetPPDataset" or self.cfg.data.test.type == "SemanticKITTIDataset") and comm.is_main_process():
+        if (self.cfg.data.test.type == "ScanNetDataset" or 
+            self.cfg.data.test.type == "ScanNet200Dataset" or 
+            self.cfg.data.test.type == "ScanNetPPDataset" or 
+            self.cfg.data.test.type == "SemanticKITTIDataset") and comm.is_main_process():
             make_dirs(os.path.join(save_path, "submit"))
         elif self.cfg.data.test.type == "NuScenesDataset" and comm.is_main_process():
             import json
-
             make_dirs(os.path.join(save_path, "submit", "lidarseg", "test"))
             make_dirs(os.path.join(save_path, "submit", "test"))
             submission = dict(

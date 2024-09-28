@@ -2,13 +2,12 @@ _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
 batch_size = 1  # bs: total bs in all gpus
-num_worker = 1
+num_worker = 4
 mix_prob = 0.5
 empty_cache = True
 enable_amp = True
-epoch = 3      # train (epoch/eval_epoch) epochs and then eval for one epoch
+epoch = 1      # train (epoch/eval_epoch) epochs and then eval for one epoch
 eval_epoch = 1
-seed = 3222106
 
 # model settings
 model = dict(
@@ -94,9 +93,7 @@ data = dict(
         data_root=data_root,
         transform=[
             dict(type="CenterShift", apply_z=True),
-            dict(
-                type="RandomDropout", dropout_ratio=0.2, dropout_application_ratio=0.2
-            ),
+            dict(type="RandomDropout", dropout_ratio=0.2, dropout_application_ratio=0.2),
             # dict(type="RandomRotateTargetAngle", angle=(1/2, 1, 3/2), center=[0, 0, 0], axis="z", p=0.75),
             dict(type="RandomRotate", angle=[-1, 1], axis="z", center=[0, 0, 0], p=0.5),
             dict(type="RandomRotate", angle=[-1 / 64, 1 / 64], axis="x", p=0.5),
@@ -113,7 +110,7 @@ data = dict(
             # dict(type="RandomColorDrop", p=0.2, color_augment=0.0),
             dict(
                 type="GridSample",
-                grid_size=0.02,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
@@ -144,7 +141,7 @@ data = dict(
             # ),
             dict(
                 type="GridSample",
-                grid_size=0.02,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
@@ -223,8 +220,30 @@ data = dict(
                 #     dict(type="RandomFlip", p=1),
                 # ],
             ],
-        ),
-    ),
-)
+        ),),
+    vis=dict(
+        type=dataset_type,
+        split="Area_5",
+        data_root=data_root,
+        transform=[
+            dict(type="CenterShift", apply_z=True),
+            dict(type="NormalizeColor"),
+        ],
+        test_mode=True,
+        test_cfg=dict(
+            voxelize=dict(
+                type="GridSample",
+                grid_size=0.05,
+                hash_type="fnv",
+                mode="test",
+                keys=("coord", "color", "normal"),
+                return_grid_coord=True,
+            ),
+            post_transform=[],
+            aug_transform=[],
+            crop=None,
+        ),),
+    )
 
 test = dict(type='SemSegTester', verbose=True)
+vis = dict(type='SemSegVisualizer', verbose=True)

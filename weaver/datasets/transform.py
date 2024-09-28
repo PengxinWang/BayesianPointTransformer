@@ -783,6 +783,7 @@ class GridSample(object):
         return_min_coord=False,
         return_displacement=False,
         project_displacement=False,
+        max_count=15,
     ):
         self.grid_size = grid_size
         self.hash = self.fnv_hash_vec if hash_type == "fnv" else self.ravel_hash_vec
@@ -794,6 +795,7 @@ class GridSample(object):
         self.return_min_coord = return_min_coord
         self.return_displacement = return_displacement
         self.project_displacement = project_displacement
+        self.max_count = max_count
 
     def __call__(self, data_dict):
         assert "coord" in data_dict.keys()
@@ -843,7 +845,7 @@ class GridSample(object):
 
         elif self.mode == "test":  # test mode
             data_part_list = []
-            for i in range(count.max()):
+            for i in range(min(self.max_count, count.max())):
                 idx_select = np.cumsum(np.insert(count, 0, 0)[0:-1]) + i % count
                 idx_part = idx_sort[idx_select]
                 data_part = dict(index=idx_part)

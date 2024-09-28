@@ -8,6 +8,7 @@ num_worker = 4  # total worker in all gpu
 batch_size = 16  # total batch size in all gpu
 batch_size_val = None  # auto adapt to bs 1 for each gpu
 batch_size_test = None  # auto adapt to bs 1 for each gpu
+batch_size_vis = 1
 epoch = 1  # total epoch, data loop = epoch // eval_epoch
 eval_epoch = 1  # sche total eval & checkpoint epoch
 clip_grad = None  # disable with None, enable with a float
@@ -28,7 +29,7 @@ hooks = [
     dict(type="InformationWriter"),
     dict(type="SemSegEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
-    dict(type="PreciseEvaluator", test_last=False),
+    # dict(type="PreciseEvaluator", test_last=False),
 ]
 
 # Trainer

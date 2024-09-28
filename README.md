@@ -192,3 +192,5 @@
 
 - [Some people work on bayesian deep learning](https://www.x-mol.com/paper/1788682254484697088/t)
 
+- [A paper repository for Point Cloud Understanding](https://github.com/Yochengliu/awesome-point-cloud-analysis)
+

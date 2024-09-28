@@ -17,7 +17,6 @@ from weaver.models.modules import PointModule, PointSequential
 from weaver.models.model_utils.misc import offset2bincount
 from weaver.models.model_utils.structure import Point
 from weaver.models.builder import MODELS
-from weaver.utils.logger import get_root_logger
 
 class RPE(torch.nn.Module):
     """
