@@ -10,20 +10,13 @@ from timm.models.layers import DropPath
 #     import flash_attn
 # except ImportError:
 #     flash_attn = None
-
-
-from weaver.models.norm.pdnorm import PDNorm
 from weaver.models.modules import PointModule, PointSequential
 from weaver.models.model_utils.misc import offset2bincount
 from weaver.models.model_utils.structure import Point
 from weaver.models.builder import MODELS
+from weaver.models.model_utils.bayesian import StoLinear
 
 class RPE(torch.nn.Module):
-    """
-    Relative Positional Embedding Module (Learnable)
-    K: patch size
-    >>> coord: 
-    """
     def __init__(self, patch_size, num_heads):
         super().__init__()
         self.patch_size = patch_size
@@ -60,6 +53,12 @@ class SerializedAttention(PointModule):
         enable_flash=False,
         upcast_attention=True,
         upcast_softmax=True,
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.40, 
+        post_mean_init=(1.0, 0.05), 
+        post_std_init=(0.25, 0.10),
+        
     ):
         super().__init__()
         assert channels % num_heads == 0
@@ -71,15 +70,14 @@ class SerializedAttention(PointModule):
         self.upcast_softmax = upcast_softmax
         self.enable_rpe = enable_rpe
         self.enable_flash = enable_flash
-        # when disable flash attention, we still don't want to use mask
-        # consequently, patch size will auto set to the
-        # min number of patch_size_max and number of points
         self.patch_size_max = patch_size
         self.patch_size = 0
         self.attn_drop = torch.nn.Dropout(attn_drop)
 
         self.qkv = torch.nn.Linear(channels, channels * 3, bias=qkv_bias)
-        self.proj = torch.nn.Linear(channels, channels)
+        self.proj = StoLinear(channels, channels, n_components=n_components,
+                              prior_mean=prior_mean, prior_std=prior_std,
+                              post_mean_init=post_mean_init, post_std_init=post_std_init)
         self.proj_drop = torch.nn.Dropout(proj_drop)
         self.softmax = torch.nn.Softmax(dim=-1)
         self.rpe = RPE(patch_size, num_heads) if self.enable_rpe else None
@@ -187,15 +185,6 @@ class SerializedAttention(PointModule):
             attn = self.softmax(attn)
             attn = self.attn_drop(attn).to(qkv.dtype)
             feat = (attn @ v).transpose(1, 2).reshape(-1, C)
-        # else:
-        #     feat = flash_attn.flash_attn_varlen_qkvpacked_func(
-        #         qkv.half().reshape(-1, 3, H, C // H),
-        #         cu_seqlens,
-        #         max_seqlen=self.patch_size,
-        #         dropout_p=self.attn_drop if self.training else 0,
-        #         softmax_scale=self.scale,
-        #     ).reshape(-1, C)
-        #     feat = feat.to(qkv.dtype)
         feat = feat[inverse]
 
         # ffn
@@ -252,10 +241,21 @@ class Block(PointModule):
         enable_flash=False,
         upcast_attention=True,
         upcast_softmax=True,
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.40, 
+        post_mean_init=(1.0, 0.05), 
+        post_std_init=(0.25, 0.10),
+        
     ):
         super().__init__()
         self.channels = channels
         self.pre_norm = pre_norm
+        self.n_components = n_components
+        self.prior_mean = prior_mean 
+        self.prior_std = prior_std 
+        self.post_mean_init = post_mean_init 
+        self.post_std_init = post_std_init
         self.cpe = PointSequential(
             spconv.SubMConv3d(
                 channels,
@@ -264,7 +264,7 @@ class Block(PointModule):
                 bias=True,
                 indice_key=cpe_indice_key,
             ),
-            nn.Linear(channels, channels),
+            torch.nn.Linear(channels, channels),
             norm_layer(channels),
         )
 
@@ -282,6 +282,11 @@ class Block(PointModule):
             enable_flash=enable_flash,
             upcast_attention=upcast_attention,
             upcast_softmax=upcast_softmax,
+            n_components=n_components,
+            prior_mean=prior_mean,
+            prior_std=prior_std,
+            post_mean_init=post_mean_init,
+            post_std_init=post_std_init
         )
         self.norm2 = PointSequential(norm_layer(channels))
         self.mlp = PointSequential(
@@ -330,21 +335,27 @@ class SerializedPooling(PointModule):
         act_layer=None,
         reduce="max",
         shuffle_orders=True,
-        traceable=True,  # record parent and cluster
+        traceable=True,
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.40, 
+        post_mean_init=(1.0, 0.05), 
+        post_std_init=(0.25, 0.10),
     ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        assert stride == 2 ** (math.ceil(stride) - 1).bit_length()  # 2, 4, 8
-        # TODO: add support to grid pool (any stride)
+        assert stride == 2 ** (math.ceil(stride) - 1).bit_length()  # stride must be power of 2
         self.stride = stride
         assert reduce in ["sum", "mean", "min", "max"]
         self.reduce = reduce
         self.shuffle_orders = shuffle_orders
         self.traceable = traceable
 
-        self.proj = nn.Linear(in_channels, out_channels)
+        self.proj = StoLinear(in_channels, out_channels, n_components=n_components,
+                              prior_mean=prior_mean, prior_std=prior_std,
+                              post_mean_init=post_mean_init, post_std_init=post_std_init)
         if norm_layer is not None:
             self.norm = PointSequential(norm_layer(out_channels))
         if act_layer is not None:
@@ -393,7 +404,6 @@ class SerializedPooling(PointModule):
             order = order[perm]
             inverse = inverse[perm]
 
-        # collect information
         point_dict = Dict(
             feat=torch_scatter.segment_csr(
                 self.proj(point.feat)[indices], idx_ptr, reduce=self.reduce
@@ -437,8 +447,8 @@ class SerializedUnpooling(PointModule):
         traceable=False,  # record parent and cluster
     ):
         super().__init__()
-        self.proj = PointSequential(nn.Linear(in_channels, out_channels))
-        self.proj_skip = PointSequential(nn.Linear(skip_channels, out_channels))
+        self.proj = PointSequential(StoLinear(in_channels, out_channels))
+        self.proj_skip = PointSequential(StoLinear(skip_channels, out_channels))
 
         if norm_layer is not None:
             self.proj.add(norm_layer(out_channels))
@@ -476,12 +486,11 @@ class Embedding(PointModule):
         self.in_channels = in_channels
         self.embed_channels = embed_channels
 
-        # TODO: check remove spconv
         self.stem = PointSequential(
             conv=spconv.SubMConv3d(
                 in_channels,
                 embed_channels,
-                kernel_size=5,
+                kernel_size=3,
                 padding=1,
                 bias=False,
                 indice_key="stem",
@@ -496,9 +505,8 @@ class Embedding(PointModule):
         point = self.stem(point)
         return point
 
-
-@MODELS.register_module("PT-v3")
-class PointTransformerV3(PointModule):
+@MODELS.register_module("PT-BNN")
+class PointBNN(PointModule):
     def __init__(
         self,
         in_channels=6,
@@ -517,7 +525,7 @@ class PointTransformerV3(PointModule):
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.3,
+        drop_path=0.0,
         pre_norm=True,
         shuffle_orders=True,
         enable_rpe=False,
@@ -525,6 +533,11 @@ class PointTransformerV3(PointModule):
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.40, 
+        post_mean_init=(1.0, 0.05), 
+        post_std_init=(0.25, 0.10),
         pdnorm_bn=False,
         pdnorm_ln=False,
         pdnorm_decouple=True,
@@ -537,6 +550,11 @@ class PointTransformerV3(PointModule):
         self.order = [order] if isinstance(order, str) else order
         self.cls_mode = cls_mode
         self.shuffle_orders = shuffle_orders
+        self.n_components = n_components
+        self.prior_mean = prior_mean 
+        self.prior_std = prior_std 
+        self.post_mean_init = post_mean_init 
+        self.post_std_init = post_std_init
 
         assert self.num_stages == len(stride) + 1
         assert self.num_stages == len(enc_depths)
@@ -548,30 +566,8 @@ class PointTransformerV3(PointModule):
         assert self.cls_mode or self.num_stages == len(dec_num_head) + 1
         assert self.cls_mode or self.num_stages == len(dec_patch_size) + 1
 
-        # norm layers
-        if pdnorm_bn:
-            bn_layer = partial(
-                PDNorm,
-                norm_layer=partial(
-                    nn.BatchNorm1d, eps=1e-3, momentum=0.01, affine=pdnorm_affine
-                ),
-                conditions=pdnorm_conditions,
-                decouple=pdnorm_decouple,
-                adaptive=pdnorm_adaptive,
-            )
-        else:
-            bn_layer = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
-        if pdnorm_ln:
-            ln_layer = partial(
-                PDNorm,
-                norm_layer=partial(nn.LayerNorm, elementwise_affine=pdnorm_affine),
-                conditions=pdnorm_conditions,
-                decouple=pdnorm_decouple,
-                adaptive=pdnorm_adaptive,
-            )
-        else:
-            ln_layer = nn.LayerNorm
-        # activation layers
+        bn_layer = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
+        ln_layer = nn.LayerNorm
         act_layer = nn.GELU
 
         self.embedding = Embedding(
@@ -600,6 +596,11 @@ class PointTransformerV3(PointModule):
                         norm_layer=bn_layer,
                         act_layer=act_layer,
                         shuffle_orders=shuffle_orders,
+                        n_components=n_components,
+                        prior_mean=prior_mean,
+                        prior_std=prior_std,
+                        post_mean_init=post_mean_init,
+                        post_std_init=post_std_init
                     ),
                     name="down",
                 )
@@ -624,6 +625,11 @@ class PointTransformerV3(PointModule):
                         enable_flash=enable_flash,
                         upcast_attention=upcast_attention,
                         upcast_softmax=upcast_softmax,
+                        n_components=n_components,
+                        prior_mean=prior_mean,
+                        prior_std=prior_std,
+                        post_mean_init=post_mean_init,
+                        post_std_init=post_std_init
                     ),
                     name=f"block{i}",
                 )
@@ -678,7 +684,7 @@ class PointTransformerV3(PointModule):
                         name=f"block{i}",
                     )
                 self.dec.add(module=dec, name=f"dec{s}")
-
+    
     def forward(self, data_dict):
         point = Point(data_dict)
         point.serialization(order=self.order, shuffle_orders=self.shuffle_orders)

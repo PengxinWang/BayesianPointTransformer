@@ -4,8 +4,8 @@ PYTHON=python3
 TEST_CODE=test.py
 
 DATASET=S3DIS
-CONFIG=semseg_ptv3_small
-EXP_NAME=semseg_ptv3_small
+CONFIG=semseg_ptbnn_small
+EXP_NAME=semseg_ptbnn_small
 WEIGHT=model_best
 GPU=None
 

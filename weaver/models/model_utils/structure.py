@@ -2,8 +2,10 @@ import torch
 import spconv.pytorch as spconv
 from addict import Dict
 
-from .serialization import encode, decode
-from .misc import offset2batch, batch2offset
+from .serialization import encode
+from .misc import offset2batch, batch2offset, offset2bincount
+from weaver.utils.logger import get_root_logger
+debug_logger = get_root_logger(log_file=f"/userhome/cs2/pxwang24/capstone/Weaver/exp/S3DIS/semseg_ptbnn_small/train.log", file_mode='w')
 
 class Point(Dict):
     """
@@ -84,7 +86,6 @@ class Point(Dict):
 
     def sparsify(self, pad=96):
         """
-        Point Cloud Serialization
 
         Point cloud is sparse, here we use "sparsify" to specifically refer to
         preparing "spconv.SparseConvTensor" for SpConv.
@@ -115,3 +116,19 @@ class Point(Dict):
         )
         self["sparse_shape"] = sparse_shape
         self["sparse_conv_feat"] = sparse_conv_feat   
+    
+    def get_samples(self, n_samples=4):
+        """
+        copy n_samples along the batch dim
+        """
+        for key, value in self.items():
+            if key == "grid_size":
+                continue
+            elif key == "offset":
+                _bincount = offset2bincount(value)
+                _bincount = torch.repeat_interleave(_bincount, n_samples, dim=0)
+                self["offset"] = torch.cumsum(_bincount, dim=0)
+            else:
+                self[key] = torch.repeat_interleave(value, n_samples, dim=0)
+            
+    

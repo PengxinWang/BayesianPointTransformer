@@ -5,22 +5,10 @@
 - **connect to gpu:** `srun --gres=gpu:2 --time=02:00:00 --cpus-per-task=8 --pty --mail-type=ALL bash`
 
 ## Curent Task:
-- [ ] Reproduce Point Transformer v3 on ModelNet40 shape classification
-    - current progress:
-        - config: configs/ModelNet40/cls_ptv3_small.py
-            - val result: mIoU/mAcc/allAcc 0.7377/0.8217/0.8861
-        - test time augmentation disabled 
-    - TODO
-        - [ ] enable flash attention
-        - [ ] enable and test pdnorm
-
-- [ ] Reproduce PTv3 on S3DIS semantic segmentation
-    - current progress:
-    - TODO
-        - [ ] enable and test DiceLoss fine tuning
-
+- [x] Reproduce Point Transformer v3 on ModelNet40 shape classification
+- [x] Reproduce PTv3 on S3DIS semantic segmentation
+- [ ] Finish code for PT-BNN
 - [ ] Visualize serialization
-    - what to use? Open3D? Unity?
 
 ## Data
 
@@ -193,4 +181,6 @@
 - [Some people work on bayesian deep learning](https://www.x-mol.com/paper/1788682254484697088/t)
 
 - [A paper repository for Point Cloud Understanding](https://github.com/Yochengliu/awesome-point-cloud-analysis)
+
+## The project structure is based on PointCept, Torch-Uncertainty
 

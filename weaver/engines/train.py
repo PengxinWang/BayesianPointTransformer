@@ -151,7 +151,11 @@ class Trainer(TrainerBase):
                 input_dict[key] = input_dict[key].cuda(non_blocking=True)
         with torch.cuda.amp.autocast(enabled=self.cfg.enable_amp):
             output_dict = self.model(input_dict)
-            loss = output_dict["loss"]
+            if self.stochastic:
+                kl_weight = self.kl_weight/self.data_size_
+                loss = output_dict["nll"] + kl_weight * output_dict["kl"]
+            else:
+                loss = output_dict["loss"]
         self.optimizer.zero_grad()
         if self.cfg.enable_amp:
             self.scaler.scale(loss).backward()
@@ -192,7 +196,11 @@ class Trainer(TrainerBase):
         if self.cfg.sync_bn:
             model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
         n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        n_sto_params = sum(p.numel() for name, p in model.named_parameters() if p.requires_grad and "post" in name)
         self.logger.info(f"Num params: {n_parameters}")
+        self.logger.info(f"Num sto_params: {n_sto_params}")
+        self.kl_weight = model.kl_weight
+        self.stochastic = model.stochastic
         model = create_ddp_model(
             model.cuda(),
             broadcast_buffers=False,
@@ -207,6 +215,7 @@ class Trainer(TrainerBase):
 
     def build_train_loader(self):
         train_data = build_dataset(self.cfg.data.train)
+        self.data_size_ = len(train_data)
 
         if comm.get_world_size() > 1:
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_data)
