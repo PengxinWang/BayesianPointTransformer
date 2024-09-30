@@ -1,19 +1,20 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 1  # bs: total bs in all gpus
-num_worker = 4
+batch_size = 24  # bs: total bs in all gpus
+num_worker = 8
 mix_prob = 0.5
 empty_cache = True
 enable_amp = True
-epoch = 1      # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 1
+epoch = 90     # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 30
 
 # model settings
 model = dict(
     type="DefaultSegmentorV2",
     num_classes=13,
     backbone_out_channels=16,
+    stochastic=False,
     backbone=dict(
         type="PT-v3",
         in_channels=6,
@@ -22,11 +23,11 @@ model = dict(
         enc_depths=(2, 2, 2, 4, 2),
         enc_channels=(16, 32, 64, 128, 256),
         enc_num_head=(2, 2, 4, 4, 8),
-        enc_patch_size=(256, 256, 256, 256, 256),
+        enc_patch_size=(64, 64, 64, 64, 64),
         dec_depths=(2, 2, 2, 2),
         dec_channels=(16, 32, 64, 128),
         dec_num_head=(2, 2, 4, 4),
-        dec_patch_size=(256, 256, 256, 256),
+        dec_patch_size=(64, 64, 64, 64),
         mlp_ratio=2,
         qkv_bias=True,
         qk_scale=None,
@@ -49,7 +50,7 @@ model = dict(
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-        dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
+        # dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
     ],
 )
 
@@ -110,7 +111,7 @@ data = dict(
             # dict(type="RandomColorDrop", p=0.2, color_augment=0.0),
             dict(
                 type="GridSample",
-                grid_size=0.05,
+                grid_size=0.10,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
@@ -141,7 +142,7 @@ data = dict(
             # ),
             dict(
                 type="GridSample",
-                grid_size=0.05,
+                grid_size=0.10,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
@@ -177,7 +178,7 @@ data = dict(
         test_cfg=dict(
             voxelize=dict(
                 type="GridSample",
-                grid_size=0.05,
+                grid_size=0.10,
                 hash_type="fnv",
                 mode="test",
                 keys=("coord", "color", "normal"),
@@ -233,7 +234,7 @@ data = dict(
         test_cfg=dict(
             voxelize=dict(
                 type="GridSample",
-                grid_size=0.05,
+                grid_size=0.10,
                 hash_type="fnv",
                 mode="test",
                 keys=("coord", "color", "normal"),

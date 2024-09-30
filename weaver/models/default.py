@@ -17,6 +17,7 @@ class DefaultSegmentorV2(nn.Module):
         backbone_out_channels,
         backbone=None,
         criteria=None,
+        stochastic=False,
     ):
         super().__init__()
         self.seg_head = (
@@ -26,6 +27,7 @@ class DefaultSegmentorV2(nn.Module):
         )
         self.backbone = build_model(backbone)
         self.criteria = build_criteria(criteria)
+        self.stochastic = stochastic
 
     def forward(self, input_dict):
         point = Point(input_dict)

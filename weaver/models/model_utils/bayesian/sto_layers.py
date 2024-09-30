@@ -2,8 +2,6 @@ import torch
 import torch.nn.functional as F
 import torch.distributions as D
 import torch.nn as nn
-from weaver.utils.logger import get_root_logger
-debug_logger = get_root_logger(log_file=f"/userhome/cs2/pxwang24/capstone/Weaver/exp/S3DIS/semseg_ptbnn_small/train.log", file_mode='w')
 
 class StoLayer(nn.Module):
     def sto_init(self, 

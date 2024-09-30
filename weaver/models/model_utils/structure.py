@@ -4,8 +4,6 @@ from addict import Dict
 
 from .serialization import encode
 from .misc import offset2batch, batch2offset, offset2bincount
-from weaver.utils.logger import get_root_logger
-debug_logger = get_root_logger(log_file=f"/userhome/cs2/pxwang24/capstone/Weaver/exp/S3DIS/semseg_ptbnn_small/train.log", file_mode='w')
 
 class Point(Dict):
     """

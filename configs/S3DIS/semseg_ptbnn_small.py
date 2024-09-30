@@ -1,12 +1,12 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 2  # bs: total bs in all gpus
-num_worker = 4  
+batch_size = 8  # bs: total bs in all gpus
+num_worker = 8  
 mix_prob = 0.5
 empty_cache = True
 enable_amp = True
-epoch = 150     # train (epoch/eval_epoch) epochs and then eval for one epoch
+epoch = 90     # train (epoch/eval_epoch) epochs and then eval for one epoch
 eval_epoch = 30
 
 # model settings

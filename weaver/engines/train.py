@@ -130,7 +130,6 @@ class Trainer(TrainerBase):
             self.logger.info(">>>>>>>>>>>>>>>> Start Training >>>>>>>>>>>>>>>>")
             for self.epoch in range(self.start_epoch, self.max_epoch):
                 # => before epoch
-                # TODO: optimize to iteration based
                 if comm.get_world_size() > 1:
                     self.train_loader.sampler.set_epoch(self.epoch)
                 self.model.train()
@@ -196,11 +195,12 @@ class Trainer(TrainerBase):
         if self.cfg.sync_bn:
             model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
         n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        n_sto_params = sum(p.numel() for name, p in model.named_parameters() if p.requires_grad and "post" in name)
         self.logger.info(f"Num params: {n_parameters}")
-        self.logger.info(f"Num sto_params: {n_sto_params}")
-        self.kl_weight = model.kl_weight
         self.stochastic = model.stochastic
+        if self.stochastic:
+            n_sto_params = sum(p.numel() for name, p in model.named_parameters() if p.requires_grad and "post" in name)
+            self.logger.info(f"Num sto_params: {n_sto_params}")
+            self.kl_weight = model.kl_weight
         model = create_ddp_model(
             model.cuda(),
             broadcast_buffers=False,
