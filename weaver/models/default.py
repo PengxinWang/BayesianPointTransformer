@@ -6,8 +6,6 @@ from weaver.models.losses import build_criteria
 from weaver.models.model_utils.structure import Point
 from weaver.models.model_utils.bayesian import StoLinear, StoLayer
 from .builder import MODELS, build_model
-# from weaver.utils.logger import get_root_logger
-# debug_logger = get_root_logger(log_file=f"/userhome/cs2/pxwang24/capstone/Weaver/exp/S3DIS/semseg_ptbnn_small/train.log", file_mode='w')
 
 @MODELS.register_module()
 class DefaultSegmentorV2(nn.Module):
@@ -57,7 +55,8 @@ class BayesSegmentor(nn.Module):
         n_samples=4,
         backbone=None,
         criteria=None,
-        kl_weight=1.0,
+        kl_weight_init = 1e-2,
+        kl_weight_final=1.0,
         entropy_weight=1.0,
         stochastic=True,
         prior_mean=1.0, 
@@ -68,7 +67,8 @@ class BayesSegmentor(nn.Module):
         super().__init__()
         self.n_components = n_components
         self.n_samples = n_samples
-        self.kl_weight = kl_weight
+        self.kl_weight_init = kl_weight_init
+        self.kl_weight_final = kl_weight_final
         self.entropy_weight = entropy_weight
         self.stochastic=stochastic
         self.prior_mean = prior_mean 
@@ -87,8 +87,8 @@ class BayesSegmentor(nn.Module):
         self.sto_layers = [m for m in self.modules() if isinstance(m, (StoLayer))]
     
     def kl_and_entropy(self):
-        kl = sum([m._kl() for m in self.sto_layers])
-        entropy = sum([m._entropy() for m in self.sto_layers])
+        kl = torch.mean(torch.stack([m._kl() for m in self.sto_layers]))
+        entropy = torch.mean(torch.stack([m._entropy() for m in self.sto_layers]))
         return (kl, entropy)
 
     def forward(self, input_dict):
@@ -106,16 +106,22 @@ class BayesSegmentor(nn.Module):
             return dict(nll=nll, kl=kl)
         # eval
         elif "segment" in input_dict.keys():
-            seg_logits = seg_logits.view(-1, self.n_components, seg_logits.size(1))
-            seg_logits = torch.mean(seg_logits, dim=1)
-            nll = self.criteria(seg_logits, input_dict["segment"])
+            seg_logits = seg_logits.view(-1, self.n_samples, seg_logits.size(1))
+            mean_seg_logits = torch.mean(seg_logits, dim=1)
+            nll = self.criteria(mean_seg_logits, input_dict["segment"])
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
-            return dict(nll=nll, kl=kl, seg_logits=seg_logits)
+            return dict(nll=nll, kl=kl, seg_logits=mean_seg_logits)
         # test
         else:
-            seg_logits = seg_logits.view(-1, self.n_components, seg_logits.size(1))
-            return dict(seg_logits=seg_logits)
+            seg_logits = seg_logits.view(-1, self.n_samples, seg_logits.size(1))
+            mean_seg_logits = torch.mean(seg_logits, dim=1)
+            aleatoric = 0.
+            epistemic = 0.
+            return dict(seg_logits=mean_seg_logits, 
+                        seg_logits_samples=seg_logits,
+                        epistemic=epistemic, 
+                        aleatoric=aleatoric)
 
 @MODELS.register_module()
 class DefaultClassifier(nn.Module):

@@ -1,4 +1,5 @@
 import torch
+import math
 import torch.nn.functional as F
 import torch.distributions as D
 import torch.nn as nn
@@ -51,7 +52,7 @@ class StoLayer(nn.Module):
         entropy_lower_bound = cond_entropy - second_part.mean(0)
         return entropy_lower_bound
 
-    def _kl(self):
+    def _kl(self, kl_scale=None):
         """
         estimate kl divergence between mixed Gaussian and Gaussian
         """
@@ -61,15 +62,21 @@ class StoLayer(nn.Module):
         post = D.Normal(post_mean, post_std)
         cross_entropy = (D.kl_divergence(post, prior) + post.entropy()).flatten(1).sum(1).mean()
         kl = cross_entropy - self._entropy_lower_bound(post_mean, post_std)
+        if kl_scale is None:
+            kl_scale = 1/(math.sqrt(post_mean.numel() + 1e-10))
+        kl = kl * kl_scale
         return kl
 
-    def _entropy(self):
+    def _entropy(self, entropy_scale=None):
         """
         estimate posterior entropy with its upper bound
         """
         mean = self.post_mean
         std = F.softplus(self.post_std)
         entropy = self._entropy_lower_bound(mean, std)
+        if entropy_scale is None:
+            entropy_scale = 1/(math.sqrt(mean.numel() + 1e-10))
+        entropy = entropy * entropy_scale
         return entropy
 
     def sto_extra_repr(self):

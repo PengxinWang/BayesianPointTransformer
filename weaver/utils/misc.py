@@ -75,11 +75,19 @@ def intersection_and_union_gpu(output, target, k, ignore_index=-1):
     area_union = area_output + area_target - area_intersection
     return area_intersection, area_union, area_target
 
+def get_linear_weight(current_epoch, max_epoch, weight_init=1e-2, weight_final=1.0):
+    epoch_weight = weight_init + (current_epoch/max_epoch)*(weight_final-weight_init)
+    return epoch_weight
+
+def entropy(prob):
+    # prob.shape = [N, C]
+    # entropy.shape = [N,]
+    entropy = - torch.sum(torch.mul(prob, torch.log(prob + 1e-10)), dim=-1)
+    return entropy
 
 def make_dirs(dir_name):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name, exist_ok=True)
-
 
 def find_free_port():
     import socket

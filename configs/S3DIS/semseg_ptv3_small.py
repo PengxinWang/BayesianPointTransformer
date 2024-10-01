@@ -1,13 +1,13 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 24  # bs: total bs in all gpus
+batch_size = 6  # bs: total bs in all gpus
 num_worker = 8
 mix_prob = 0.5
 empty_cache = True
 enable_amp = True
-epoch = 90     # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 30
+epoch = 200     # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 
 # model settings
 model = dict(
@@ -36,7 +36,7 @@ model = dict(
         drop_path=0.3,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=False,
+        enable_rpe=True,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,

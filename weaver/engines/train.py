@@ -14,6 +14,7 @@ from weaver.utils.optimizer import build_optimizer
 from weaver.utils.scheduler import build_scheduler
 from weaver.utils.events import EventStorage, ExceptionWriter
 from weaver.utils.registry import Registry
+from weaver.utils.misc import get_linear_weight
 from weaver.utils import comm
 from .hooks import HookBase, build_hooks
 from .defaults import create_ddp_model, worker_init_fn
@@ -151,6 +152,7 @@ class Trainer(TrainerBase):
         with torch.cuda.amp.autocast(enabled=self.cfg.enable_amp):
             output_dict = self.model(input_dict)
             if self.stochastic:
+                self.kl_weight = get_linear_weight(self.epoch, 2/3*self.max_epoch, self.kl_weight_init, self.kl_weight_final)
                 kl_weight = self.kl_weight/self.data_size_
                 loss = output_dict["nll"] + kl_weight * output_dict["kl"]
             else:
@@ -200,7 +202,8 @@ class Trainer(TrainerBase):
         if self.stochastic:
             n_sto_params = sum(p.numel() for name, p in model.named_parameters() if p.requires_grad and "post" in name)
             self.logger.info(f"Num sto_params: {n_sto_params}")
-            self.kl_weight = model.kl_weight
+            self.kl_weight_init = model.kl_weight_init
+            self.kl_weight_final = model.kl_weight_final
         model = create_ddp_model(
             model.cuda(),
             broadcast_buffers=False,

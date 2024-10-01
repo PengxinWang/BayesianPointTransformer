@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=semseg_ptv3_small
-EXP_NAME=semseg_ptv3_small
+CONFIG=semseg_ptbnn_small
+EXP_NAME=semseg_ptbnn_small
 WEIGHT=None
 RESUME=false
 GPU=None

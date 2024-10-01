@@ -1,13 +1,13 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 8  # bs: total bs in all gpus
+batch_size = 6  # bs: total bs in all gpus
 num_worker = 8  
 mix_prob = 0.5
 empty_cache = True
 enable_amp = True
-epoch = 90     # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 30
+epoch = 200     # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 
 # model settings
 model = dict(
@@ -16,13 +16,14 @@ model = dict(
     backbone_out_channels=16,
     n_components=4,
     n_samples=4,
-    stochastic = True,
+    stochastic=True,
     prior_mean=1.0, 
-    prior_std=0.40, 
+    prior_std=0.10, 
     post_mean_init=(1.0, 0.05), 
-    post_std_init=(0.25, 0.10),
-    kl_weight=1.0,
-    entropy_weight=0.5,
+    post_std_init=(0.10, 0.05),
+    kl_weight_init=0.1,
+    kl_weight_final=1.0,
+    entropy_weight=0.1,
     backbone=dict(
         type="PT-BNN",
         in_channels=6,
@@ -44,7 +45,7 @@ model = dict(
         drop_path=0.0,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=False,
+        enable_rpe=True,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
@@ -58,7 +59,8 @@ model = dict(
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-        # dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
+        dict(type="FocalLoss", loss_weight=0.25, ignore_index=-1),
+        dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
     ],
 )
 
@@ -72,7 +74,9 @@ scheduler = dict(
     div_factor=10.0,
     final_div_factor=1000.0,
 )
-param_dicts = [dict(keyword="block", lr=0.0006)]
+param_dicts = [dict(keyword="block", lr=0.0006),
+             # dict(keyword="Sto", lr=1e-3),
+               ]
 
 # dataset settings
 dataset_type = "S3DISDataset"
