@@ -28,7 +28,8 @@ class CrossEntropyLoss(nn.Module):
         )
 
     def forward(self, pred, target):
-        return self.loss(pred, target) * self.loss_weight
+        loss = self.loss(pred, target)
+        return loss * self.loss_weight
 
 
 @LOSSES.register_module()
@@ -245,10 +246,12 @@ class TverskyLoss(nn.Module):
                 fp = torch.sum(torch.mul(pred[:, i], 1 - target[:, i]))
                 fn = torch.sum(torch.mul(1 - pred[:, i], target[:, i]))
                 num = tp + self.smooth
-                den = fp.pow(self.exponent)*self.fp_weight + fn.pow(self.exponent)*self.fn_weight + self.smooth
+                den = tp + fp.pow(self.exponent)*self.fp_weight + fn.pow(self.exponent)*self.fn_weight + self.smooth
                 tversky_loss = 1 - num / den
                 total_loss += tversky_loss
         loss = total_loss / num_classes
+        if loss < 0:
+            print(f'debug: negative TverskyLoss {loss}')
         return self.loss_weight * loss
 
 @LOSSES.register_module("BalancedFocalLoss")

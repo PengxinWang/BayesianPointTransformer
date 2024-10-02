@@ -3,7 +3,7 @@ _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
 batch_size = 6  # bs: total bs in all gpus
 num_worker = 8  
-mix_prob = 0.5
+mix_prob = 0.3
 empty_cache = True
 enable_amp = True
 epoch = 200     # train (epoch/eval_epoch) epochs and then eval for one epoch
@@ -14,16 +14,16 @@ model = dict(
     type="BayesSegmentor",
     num_classes=13,
     backbone_out_channels=16,
-    n_components=4,
+    n_components=2,
     n_samples=4,
     stochastic=True,
     prior_mean=1.0, 
     prior_std=0.10, 
-    post_mean_init=(1.0, 0.05), 
-    post_std_init=(0.10, 0.05),
-    kl_weight_init=0.1,
+    post_mean_init=(1.0, 0.10), 
+    post_std_init=(0.10, 0.10),
+    kl_weight_init=1e-2,
     kl_weight_final=1.0,
-    entropy_weight=0.1,
+    entropy_weight=0.3,
     backbone=dict(
         type="PT-BNN",
         in_channels=6,
@@ -65,7 +65,7 @@ model = dict(
 )
 
 # scheduler settings
-optimizer = dict(type="AdamW", lr=0.006, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.006, weight_decay=0.00)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.006, 0.0006],
@@ -124,7 +124,7 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=204800, mode="random"),
+            dict(type="SphereCrop", point_max=51200, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             # dict(type="ShufflePoint"),

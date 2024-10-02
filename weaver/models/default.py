@@ -5,6 +5,7 @@ import torch_scatter
 from weaver.models.losses import build_criteria
 from weaver.models.model_utils.structure import Point
 from weaver.models.model_utils.bayesian import StoLinear, StoLayer
+from weaver.utils.misc import point_wise_entropy
 from .builder import MODELS, build_model
 
 @MODELS.register_module()
@@ -62,7 +63,7 @@ class BayesSegmentor(nn.Module):
         prior_mean=1.0, 
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
-        post_std_init=(0.25, 0.10),
+        post_std_init=(0.40, 0.20),
     ):
         super().__init__()
         self.n_components = n_components
@@ -116,8 +117,9 @@ class BayesSegmentor(nn.Module):
         else:
             seg_logits = seg_logits.view(-1, self.n_samples, seg_logits.size(1))
             mean_seg_logits = torch.mean(seg_logits, dim=1)
-            aleatoric = 0.
-            epistemic = 0.
+            predictive = point_wise_entropy(mean_seg_logits, type='predictive')
+            aleatoric = point_wise_entropy(seg_logits, type='aleatoric')
+            epistemic = predictive - aleatoric
             return dict(seg_logits=mean_seg_logits, 
                         seg_logits_samples=seg_logits,
                         epistemic=epistemic, 

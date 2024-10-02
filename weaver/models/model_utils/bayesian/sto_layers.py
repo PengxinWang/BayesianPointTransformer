@@ -63,7 +63,8 @@ class StoLayer(nn.Module):
         cross_entropy = (D.kl_divergence(post, prior) + post.entropy()).flatten(1).sum(1).mean()
         kl = cross_entropy - self._entropy_lower_bound(post_mean, post_std)
         if kl_scale is None:
-            kl_scale = 1/(math.sqrt(post_mean.numel() + 1e-10))
+            # kl_scale = 1/(math.sqrt(post_mean.numel() + 1e-10))
+            kl_scale = 1
         kl = kl * kl_scale
         return kl
 
