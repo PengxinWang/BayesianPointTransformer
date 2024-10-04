@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch_scatter
 
-from weaver.models.losses import build_criteria
-from weaver.models.model_utils.structure import Point
-from weaver.models.model_utils.bayesian import StoLinear, StoLayer
-from weaver.utils.misc import point_wise_entropy
+from pointbnn.models.losses import build_criteria
+from pointbnn.models.model_utils.structure import Point
+from pointbnn.models.model_utils.bayesian import StoLinear, StoLayer
+from pointbnn.utils.misc import point_wise_entropy
 from .builder import MODELS, build_model
 
 @MODELS.register_module()

@@ -8,11 +8,11 @@ import torch.utils.data
 from collections import OrderedDict
 
 from collections.abc import Sequence
-from weaver.utils.timer import Timer
-from weaver.utils.comm import is_main_process, synchronize, get_world_size
-from weaver.utils.cache import shared_dict
-from weaver.utils import comm
-from weaver.engines.test import TESTERS
+from pointbnn.utils.timer import Timer
+from pointbnn.utils.comm import is_main_process, synchronize, get_world_size
+from pointbnn.utils.cache import shared_dict
+from pointbnn.utils import comm
+from pointbnn.engines.test import TESTERS
 
 from .default import HookBase
 from .builder import HOOKS

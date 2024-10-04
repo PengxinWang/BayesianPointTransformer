@@ -1,4 +1,4 @@
-from weaver.utils.registry import Registry
+from pointbnn.utils.registry import Registry
 
 HOOKS = Registry("hooks")
 

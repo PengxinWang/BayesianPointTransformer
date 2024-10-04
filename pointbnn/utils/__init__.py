@@ -7,3 +7,4 @@ from .optimizer import *
 from .path import *
 from .env import *
 from .events import *
+from .pointops import *

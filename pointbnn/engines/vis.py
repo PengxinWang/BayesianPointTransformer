@@ -5,10 +5,9 @@ import torch.utils.data
 import open3d as o3d
 import matplotlib.pyplot as plt
 
-from weaver.datasets import build_dataset
-from weaver.utils.logger import get_root_logger
-from weaver.utils.registry import Registry
-from weaver.utils.misc import intersection_and_union
+from pointbnn.datasets import build_dataset
+from pointbnn.utils.logger import get_root_logger
+from pointbnn.utils.registry import Registry
 
 VISUALIZERS = Registry("visualizers")
 

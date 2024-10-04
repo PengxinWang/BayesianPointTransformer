@@ -9,7 +9,7 @@ import torch
 import copy
 from collections.abc import Sequence, Mapping
 
-from weaver.utils.registry import Registry
+from pointbnn.utils.registry import Registry
 
 TRANSFORMS = Registry("transforms")
 
@@ -18,6 +18,7 @@ TRANSFORMS = Registry("transforms")
 class Collect(object):
     def __init__(self, keys, offset_keys_dict=None, **kwargs):
         """
+        collect data keys, calculate offset(num_of_point), concatenate features
         e.g. Collect(keys=[coord], feat_keys=[coord, color])
         """
         if offset_keys_dict is None:

@@ -1,4 +1,4 @@
-from weaver.utils.registry import Registry
+from pointbnn.utils.registry import Registry
 
 MODELS = Registry("models")
 MODULES = Registry("modules")

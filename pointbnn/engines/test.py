@@ -8,12 +8,12 @@ import torch.nn.functional as F
 import torch.utils.data
 
 from .defaults import create_ddp_model
-from weaver.utils import comm
-from weaver.datasets import build_dataset, collate_fn
-from weaver.models import build_model
-from weaver.utils.logger import get_root_logger
-from weaver.utils.registry import Registry
-from weaver.utils.misc import (
+from pointbnn.utils import comm
+from pointbnn.datasets import build_dataset, collate_fn
+from pointbnn.models import build_model
+from pointbnn.utils.logger import get_root_logger
+from pointbnn.utils.registry import Registry
+from pointbnn.utils.misc import (
     AverageMeter,
     intersection_and_union,
     intersection_and_union_gpu,

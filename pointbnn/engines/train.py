@@ -7,15 +7,15 @@ from functools import partial
 
 from collections.abc import Iterator
 from torch.utils.tensorboard import SummaryWriter
-from weaver.datasets import build_dataset, point_collate_fn, collate_fn
-from weaver.models import build_model
-from weaver.utils.logger import get_root_logger
-from weaver.utils.optimizer import build_optimizer
-from weaver.utils.scheduler import build_scheduler
-from weaver.utils.events import EventStorage, ExceptionWriter
-from weaver.utils.registry import Registry
-from weaver.utils.misc import get_linear_weight
-from weaver.utils import comm
+from pointbnn.datasets import build_dataset, point_collate_fn, collate_fn
+from pointbnn.models import build_model
+from pointbnn.utils.logger import get_root_logger
+from pointbnn.utils.optimizer import build_optimizer
+from pointbnn.utils.scheduler import build_scheduler
+from pointbnn.utils.events import EventStorage, ExceptionWriter
+from pointbnn.utils.registry import Registry
+from pointbnn.utils.misc import get_linear_weight
+from pointbnn.utils import comm
 from .hooks import HookBase, build_hooks
 from .defaults import create_ddp_model, worker_init_fn
 

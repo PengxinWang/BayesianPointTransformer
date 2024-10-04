@@ -34,10 +34,14 @@ def collate_fn(batch):
         return default_collate(batch)
 
 
-def point_collate_fn(batch, mix_prob=0):
+def point_collate_fn(batch, mix_prob=0, split_up=False):
     assert isinstance(batch[0], Mapping)  # currently, only support input_dict, rather than input_list
     batch = collate_fn(batch)
     if "offset" in batch.keys():
+        if split_up:
+            offset = batch["offset"]
+            max_pc = max(offset)
+            raise NotImplementedError
         # Mix3d (https://arxiv.org/pdf/2110.02210.pdf)
         if random.random() < mix_prob:
             batch["offset"] = torch.cat([batch["offset"][1:-1:2], batch["offset"][-1].unsqueeze(0)], dim=0)

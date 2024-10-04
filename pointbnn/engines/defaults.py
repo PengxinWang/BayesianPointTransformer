@@ -4,9 +4,9 @@ import argparse
 import multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel
 
-import weaver.utils.comm as comm
-from weaver.utils.env import get_random_seed, set_seed
-from weaver.utils.config import Config, DictAction
+import pointbnn.utils.comm as comm
+from pointbnn.utils.env import get_random_seed, set_seed
+from pointbnn.utils.config import Config, DictAction
 
 
 def create_ddp_model(model, *, fp16_compression=False, **kwargs):

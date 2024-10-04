@@ -1,12 +1,12 @@
 import numpy as np
 import torch
 import torch.distributed as dist
-# import pointops
 from uuid import uuid4
 
 # multi-gpu training
-import weaver.utils.comm as comm
-from weaver.utils.misc import intersection_and_union_gpu
+import pointbnn.utils.comm as comm
+from pointbnn.utils.misc import intersection_and_union_gpu
+from pointbnn.utils.pointops import knn_query
 
 from .default import HookBase
 from .builder import HOOKS
@@ -115,7 +115,8 @@ class SemSegEvaluator(HookBase):
             pred = output.max(1)[1]
             segment = input_dict["segment"]
             if "origin_coord" in input_dict.keys():
-                idx, _ = pointops.knn_query(
+                # interpolate
+                idx, _ = knn_query(
                     1,
                     input_dict["coord"].float(),
                     input_dict["offset"].int(),
@@ -215,7 +216,7 @@ class BayesSemSegEvaluator(HookBase):
             pred = output.max(1)[1]
             segment = input_dict["segment"]
             if "origin_coord" in input_dict.keys():
-                idx, _ = pointops.knn_query(
+                idx, _ = knn_query(
                     1,
                     input_dict["coord"].float(),
                     input_dict["offset"].int(),

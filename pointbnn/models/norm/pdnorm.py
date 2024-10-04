@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from weaver.models.modules import PointModule
-from weaver.models.builder import MODULES
+from pointbnn.models.modules import PointModule
+from pointbnn.models.builder import MODULES
 
 
 @MODULES.register_module()

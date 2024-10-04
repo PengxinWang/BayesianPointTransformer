@@ -1,12 +1,14 @@
 import os
 import glob
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from copy import deepcopy
 from torch.utils.data import Dataset
 from collections.abc import Sequence
 
-from weaver.utils.logger import get_root_logger
-from weaver.utils.cache import shared_dict
+from pointbnn.utils.logger import get_root_logger
+from pointbnn.utils.cache import shared_dict
 
 from .builder import DATASETS, build_dataset
 from .transform import Compose, TRANSFORMS
@@ -160,6 +162,33 @@ class DefaultDataset(Dataset):
                          
         return result_dict
 
+    def visualize_dataset(self, save_path):
+        counts = []
+        for idx in range(len(self.data_list)):
+            data = self.get_data(idx)
+            counts.append(data["coord"].shape[0])
+        counts = np.array(counts)
+        max_index = np.argmax(counts)
+        max_data_name = self.get_data_name(max_index)
+        min_index = np.argmin(counts)
+        min_data_name = self.get_data_name(min_index)        
+        mean = np.mean(counts)
+        std = np.std(counts)
+        plt.style.use('ggplot')
+        _ = plt.figure(figsize=(10,6))
+        sns.histplot(counts)
+        plt.axvline(counts[max_index], color='r', linestyle='--', label=f'{max_data_name}')
+        plt.axvline(counts[min_index], color='g', linestyle='--', label=f'{min_data_name}')
+        plt.axvline(mean, color='b', linestyle='--', label=f'mean:{mean}\nstd:{std}')
+        plt.xlabel(f'Num of Points')
+        plt.ylabel(f'Frequency')
+        plt.title(f'Basic Statistics on S3DIS dataset')   
+        plt.legend()     
+        plt.savefig(os.path.join(save_path, f'dataset.png'))
+
+    def vis_pcd(self, save_path):
+        raise NotImplementedError
+
     def __getitem__(self, idx):
         if self.test_mode:
             return self.prepare_test_data(idx)
@@ -168,7 +197,6 @@ class DefaultDataset(Dataset):
 
     def __len__(self):
         return len(self.data_list) * self.loop
-
 
 @DATASETS.register_module()
 class ConcatDataset(Dataset):

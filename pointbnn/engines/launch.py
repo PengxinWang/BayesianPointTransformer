@@ -4,7 +4,7 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from weaver.utils import comm
+from pointbnn.utils import comm
 
 __all__ = ["DEFAULT_TIMEOUT", "launch"]
 

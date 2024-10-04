@@ -5,7 +5,7 @@ import torch
 # import pointops
 from torch.utils.data import Dataset
 
-from weaver.utils.logger import get_root_logger
+from pointbnn.utils.logger import get_root_logger
 from .builder import DATASETS
 from .transform import Compose
 
@@ -78,13 +78,14 @@ class ModelNetDataset(Dataset):
             data = np.loadtxt(data_path, delimiter=",").astype(np.float32)
             if self.num_point is not None:
                 if self.uniform_sampling:
-                    with torch.no_grad():
-                        mask = pointops.farthest_point_sampling(
-                            torch.tensor(data).float().cuda(),
-                            torch.tensor([len(data)]).long().cuda(),
-                            torch.tensor([self.num_point]).long().cuda(),
-                        )
-                    data = data[mask.cpu()]
+                    raise NotImplementedError
+                    # with torch.no_grad():
+                    #     mask = pointops.farthest_point_sampling(
+                    #         torch.tensor(data).float().cuda(),
+                    #         torch.tensor([len(data)]).long().cuda(),
+                    #         torch.tensor([self.num_point]).long().cuda(),
+                    #     )
+                    # data = data[mask.cpu()]
                 else:
                     data = data[: self.num_point]
             coord, normal = data[:, 0:3], data[:, 3:6]

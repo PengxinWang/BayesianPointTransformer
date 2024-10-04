@@ -1,10 +1,10 @@
-from weaver.engines.defaults import (
+from pointbnn.engines.defaults import (
     default_argument_parser,
     default_config_parser,
     default_setup,
 )
-from weaver.engines.test import TESTERS
-from weaver.engines.launch import launch
+from pointbnn.engines.test import TESTERS
+from pointbnn.engines.launch import launch
 
 
 def main_worker(cfg):

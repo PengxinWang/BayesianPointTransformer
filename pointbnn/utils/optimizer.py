@@ -1,6 +1,6 @@
 import torch
-from weaver.utils.logger import get_root_logger
-from weaver.utils.registry import Registry
+from pointbnn.utils.logger import get_root_logger
+from pointbnn.utils.registry import Registry
 
 OPTIMIZERS = Registry("optimizers")
 OPTIMIZERS.register_module(module=torch.optim.SGD, name="SGD")

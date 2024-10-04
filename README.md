@@ -8,27 +8,16 @@
 - [x] Reproduce Point Transformer v3 on ModelNet40 shape classification
 - [x] Reproduce PTv3 on S3DIS semantic segmentation
 - [ ] Finish code for PT-BNN
-- [ ] Visualize serialization
+- [x] Visualize serialization
+- [x] Visualize uncertainty quantification
 
 ## Data
 
 ### General Setting
 - Point Module: A Dict(addict.Dict) storing necessary information of a batch of point cloud data 
-    - coord: coordination of points, dtype=int32
     - offset: index to separate point clouds
 
-- **Offset**: for point cloud data, it's actually consisted of a batch of point cloud, using offset to indicate separation
-    - points = [pt1, pt2, pt3, pt4, pt5]
-    - offset = [3, 5]
-    - classes = [chair, desk]
-
 ### Preprocessing
-- Offset
-- potential numerical issue(amp, automatic mixed precision, applied)
-    - point.feat.dtype = torch.float16
-    - point.coord.dtype = torch.float32
-    - in flash attention, params are processed in half precision
-- for evaluation
 
 ### ModelNet40
 - how many classes/shape are there?
@@ -61,15 +50,6 @@
 
 ### Post Processing
 - Random_scale for 10 times for ensembling(TTA)
-
-## Config
-### base config: default_runtime.py
-- **enable_amp=False:** automatic mixed precision
-- **sync_bn:** synchronizing batch normalization for multi GPU training
-- **empty_cache:** empty GPU cache, exchange time for space
-- **find_unused_parameters:**
-- **mix_prob:** related to Mixed3D data augmentation
-- **param_dicts:** allow lr scale to certain param groups
 
 ## Model Structure
 - **Model size**
