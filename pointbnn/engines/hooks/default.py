@@ -14,6 +14,9 @@ class HookBase:
     def before_step(self):
         pass
 
+    def run_step(self):
+        pass
+
     def after_step(self):
         pass
 

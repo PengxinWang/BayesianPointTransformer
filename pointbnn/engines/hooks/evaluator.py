@@ -231,15 +231,25 @@ class BayesSemSegEvaluator(HookBase):
                 self.trainer.cfg.data.num_classes,
                 self.trainer.cfg.data.ignore_index,
             )
-            if comm.get_world_size() > 1:
-                dist.all_reduce(intersection), dist.all_reduce(union), dist.all_reduce(
-                    target
-                )
+            print('Debugging intersection_and_union_gpu after function:')
+            print('Intersection:', intersection)
+            print('Target:', target)
+            print('Union:', union)
+            if comm.get_world_size() > 1:            
+                dist.all_reduce(intersection)
+                dist.all_reduce(union)
+                dist.all_reduce(target)
+                print(f'debug evaluator 7.5')
+                print('Debugging intersection_and_union_gpu after all reduce:')
+                print('Intersection:', intersection)
+                print('Target:', target)
+                print('Union:', union)
             intersection, union, target = (
                 intersection.cpu().numpy(),
                 union.cpu().numpy(),
                 target.cpu().numpy(),
             )
+            print(f'debug evaluator 8')
             # Here there is no need to sync since sync happened in dist.all_reduce
             self.trainer.storage.put_scalar("val_intersection", intersection)
             self.trainer.storage.put_scalar("val_union", union)

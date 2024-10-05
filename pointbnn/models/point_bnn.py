@@ -21,7 +21,7 @@ class RPE(torch.nn.Module):
         super().__init__()
         self.patch_size = patch_size
         self.num_heads = num_heads
-        self.pos_bnd = int((4 * patch_size) ** (1 / 3) * 2)
+        self.pos_bnd = int((patch_size) ** (1 / 3) * 2)
         self.rpe_num = 2 * self.pos_bnd + 1
         self.rpe_table = torch.nn.Parameter(torch.zeros(3 * self.rpe_num, num_heads))
         torch.nn.init.trunc_normal_(self.rpe_table, std=0.02)
@@ -264,7 +264,9 @@ class Block(PointModule):
                 bias=True,
                 indice_key=cpe_indice_key,
             ),
-            torch.nn.Linear(channels, channels),
+            StoLinear(channels, channels, n_components=n_components,
+                      prior_mean=prior_mean, prior_std=prior_std,
+                      post_mean_init=post_mean_init, post_std_init=post_std_init),
             norm_layer(channels),
         )
 

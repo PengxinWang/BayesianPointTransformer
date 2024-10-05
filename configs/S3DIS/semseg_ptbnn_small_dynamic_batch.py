@@ -1,13 +1,15 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 6  # bs: total bs in all gpus
+batch_size = 32  # bs: total bs in all gpus
+dynamic_batching = True
+max_points_per_batch=100000
 num_worker = 8  
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 600     # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 60
+epoch = 300 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 150
 
 # model settings
 model = dict(
@@ -66,14 +68,18 @@ model = dict(
 
 # scheduler settings
 optimizer = dict(type="AdamW", lr=0.01, weight_decay=0.00)
+# scheduler = dict(
+#     type="OneCycleLR",
+#     max_lr=[0.01, 0.001],
+#     pct_start=0.05,
+#     anneal_strategy="cos",
+#     div_factor=10.0,
+#     final_div_factor=1000.0,
+# )
 scheduler = dict(
-    type="OneCycleLR",
-    max_lr=[0.01, 0.001],
-    pct_start=0.05,
-    anneal_strategy="cos",
-    div_factor=10.0,
-    final_div_factor=1000.0,
+    type="CosineAnnealingLR",
 )
+
 param_dicts = [dict(keyword="block", lr=0.001),
              # dict(keyword="Sto", lr=1e-3),
                ]
@@ -101,7 +107,7 @@ data = dict(
         "clutter",
     ],
     train=dict(
-        type=dataset_type,
+        type=f'Dynamic{dataset_type}',
         split=("Area_1", "Area_2", "Area_3", "Area_4", "Area_6"),
         data_root=data_root,
         transform=[
@@ -208,11 +214,14 @@ data = dict(
 
 hooks = [
     dict(type="CheckpointLoader"),
-    dict(type="IterationTimer", warmup_iter=2),
-    dict(type="InformationWriter"),
+    dict(type="DynamicIterationTimer", warmup_iter=2),
+    # dict(type="GPUMemoryInspector"),                           # potential wierd bug
+    dict(type="DynamicInformationWriter"),
     dict(type="BayesSemSegEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
     # dict(type="PreciseEvaluator", test_last=False),
 ]
+
+train = dict(type="DynamicTrainer")
 
 test = dict(type='BayesSemSegTester', verbose=True)

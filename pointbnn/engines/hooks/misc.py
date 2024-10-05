@@ -63,6 +63,42 @@ class IterationTimer(HookBase):
             self.trainer.storage.history("data_time").reset()
             self.trainer.storage.history("batch_time").reset()
 
+@HOOKS.register_module()
+class DynamicIterationTimer(HookBase):
+    def __init__(self, warmup_iter=1):
+        self._warmup_iter = warmup_iter
+        self._start_time = time.perf_counter()
+        self._iter_timer = Timer()
+
+    def before_train(self):
+        self._start_time = time.perf_counter()
+
+    def before_epoch(self):
+        self._iter_timer.reset()
+
+    def before_step(self):
+        data_time = self._iter_timer.seconds()
+        self.trainer.storage.put_scalar("data_time", data_time)
+
+    def after_step(self):
+        batch_time = self._iter_timer.seconds()
+        self._iter_timer.reset()
+        self.trainer.storage.put_scalar("batch_time", batch_time)
+        if "iter_info" in self.trainer.comm_info.keys():
+            info = (
+                "Data {data_time_val:.3f} ({data_time_avg:.3f}) "
+                "Batch {batch_time_val:.3f} ({batch_time_avg:.3f}) ".format(
+                    data_time_val=self.trainer.storage.history("data_time").val,
+                    data_time_avg=self.trainer.storage.history("data_time").avg,
+                    batch_time_val=self.trainer.storage.history("batch_time").val,
+                    batch_time_avg=self.trainer.storage.history("batch_time").avg,
+                )
+            )
+            self.trainer.comm_info["iter_info"] += info
+        if self.trainer.comm_info["iter"] <= self._warmup_iter:
+            self.trainer.storage.history("data_time").reset()
+            self.trainer.storage.history("batch_time").reset()
+
 
 @HOOKS.register_module()
 class InformationWriter(HookBase):
@@ -81,6 +117,108 @@ class InformationWriter(HookBase):
             max_epoch=self.trainer.max_epoch,
             iter=self.trainer.comm_info["iter"] + 1,
             max_iter=len(self.trainer.train_loader),
+        )
+        self.trainer.comm_info["iter_info"] += info
+
+    def after_step(self):
+        if "model_output_dict" in self.trainer.comm_info.keys():
+            model_output_dict = self.trainer.comm_info["model_output_dict"]
+            self.model_output_keys = model_output_dict.keys()
+            for key in self.model_output_keys:
+                self.trainer.storage.put_scalar(key, model_output_dict[key].item())
+
+        for key in self.model_output_keys:
+            self.trainer.comm_info["iter_info"] += "{key}: {value:.4f} ".format(
+                key=key, value=self.trainer.storage.history(key).val
+            )
+        lr = self.trainer.optimizer.state_dict()["param_groups"][0]["lr"]
+        self.trainer.comm_info["iter_info"] += "Lr: {lr:.5f}".format(lr=lr)
+        self.trainer.logger.info(self.trainer.comm_info["iter_info"])
+        self.trainer.comm_info["iter_info"] = ""  # reset iter info
+        if self.trainer.writer is not None:
+            self.trainer.writer.add_scalar("lr", lr, self.curr_iter)
+            for key in self.model_output_keys:
+                self.trainer.writer.add_scalar(
+                    "train_batch/" + key,
+                    self.trainer.storage.history(key).val,
+                    self.curr_iter,
+                )
+
+    def after_epoch(self):
+        epoch_info = "Train result: "
+        for key in self.model_output_keys:
+            epoch_info += "{key}: {value:.4f} ".format(
+                key=key, value=self.trainer.storage.history(key).avg
+            )
+        self.trainer.logger.info(epoch_info)
+        if self.trainer.writer is not None:
+            for key in self.model_output_keys:
+                self.trainer.writer.add_scalar(
+                    "train/" + key,
+                    self.trainer.storage.history(key).avg,
+                    self.trainer.epoch + 1,
+                )
+
+@HOOKS.register_module()
+class GPUMemoryInspector(HookBase):
+    def __init__(self):
+        pass
+    
+    def before_train(self):
+        self.trainer.comm_info["gpu_memory_info"] = ""
+    
+    def before_step(self):
+        info = "Train: [{epoch}/{max_epoch}][{iter}]".format(
+            epoch=self.trainer.epoch+1,
+            max_epoch=self.trainer.max_epoch,
+            iter = self.trainer.comm_info["iter"] + 1
+        )
+        self.trainer.comm_info["gpu_memory_info"] += info
+    
+    def run_step(self):
+        allocated_memory = torch.cuda.memory_allocated()/(1024**3)
+        reserved_memory = torch.cuda.memory_reserved()/(1024**3)
+        self.trainer.storage.put_scalar("allocated_memory_GB", allocated_memory)
+        self.trainer.storage.put_scalar("reserved_memory_GB", reserved_memory)
+        self.trainer.comm_info["gpu_memory_info"] += 'Allocated: {alloc:.3f}GB, Reserved: {res:.3f}GB'.format(
+            alloc=allocated_memory,
+            res=reserved_memory,            
+        )
+        self.trainer.logger.info(self.trainer.comm_info["gpu_memory_info"])
+        self.trainer.comm_info["gpu_memory_info"] = ''
+        if self.trainer.writer is not None:
+            self.trainer.writer.add_scalar(
+                "gpu_memory/allocated_GB", allocated_memory, self.trainer.comm_info["iter"],
+            )
+            self.trainer.writer.add_scalar(
+                "gpu_memory/reserved_GB", reserved_memory, self.trainer.comm_info["iter"]
+            )
+    
+    def after_epoch(self):
+        allocated_avg = self.trainer.storage.history("allocated_memory_GB").avg
+        reserved_avg = self.trainer.storage.history("reserved_memory_GB").avg
+        epoch_info = "GPU Memory usage: Allocated Avg: {alloc_avg:.3f}GB, Reserved Avg: {res_avg:.3f}GB".format(
+            alloc_avg=allocated_avg,
+            res_avg=reserved_avg
+        )
+        self.trainer.logger.info(epoch_info)
+
+@HOOKS.register_module()
+class DynamicInformationWriter(HookBase):
+    def __init__(self):
+        self.curr_iter = 0
+        self.model_output_keys = []
+
+    def before_train(self):
+        self.trainer.comm_info["iter_info"] = ""
+        self.curr_iter = self.trainer.curr_iter
+
+    def before_step(self):
+        self.curr_iter += 1
+        info = "Train: [{epoch}/{max_epoch}][{iter}] ".format(
+            epoch=self.trainer.epoch + 1,
+            max_epoch=self.trainer.max_epoch,
+            iter=self.trainer.comm_info["iter"] + 1,
         )
         self.trainer.comm_info["iter_info"] += info
 
@@ -156,6 +294,7 @@ class CheckpointSaver(HookBase):
             torch.save(
                 {
                     "epoch": self.trainer.epoch + 1,
+                    "curr_iter": self.trainer.curr_iter,
                     "state_dict": self.trainer.model.state_dict(),
                     "optimizer": self.trainer.optimizer.state_dict(),
                     "scheduler": self.trainer.scheduler.state_dict(),
@@ -223,6 +362,7 @@ class CheckpointLoader(HookBase):
                     f"Resuming train at eval epoch: {checkpoint['epoch']}"
                 )
                 self.trainer.start_epoch = checkpoint["epoch"]
+                self.trainer.curr_iter = checkpoint["curr_iter"]
                 self.trainer.best_metric_value = checkpoint["best_metric_value"]
                 self.trainer.optimizer.load_state_dict(checkpoint["optimizer"])
                 self.trainer.scheduler.load_state_dict(checkpoint["scheduler"])

@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=semseg_ptbnn_small
-EXP_NAME=semseg_ptbnn_small
+CONFIG=semseg_ptbnn_small_dynamic_batch
+EXP_NAME=semseg_ptbnn_small_dynamic_batch
 WEIGHT=None
 RESUME=false
 GPU=None
@@ -35,7 +35,7 @@ then
   WEIGHT=$MODEL_DIR/model_last.pth
 else
   mkdir -p "$MODEL_DIR" "$CODE_DIR"
-  cp -r scripts tools weaver "$CODE_DIR"
+  cp -r scripts tools pointbnn "$CODE_DIR"
 fi
 
 echo "Loading config in:" $CONFIG_DIR

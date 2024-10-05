@@ -7,9 +7,10 @@
 ## Curent Task:
 - [x] Reproduce Point Transformer v3 on ModelNet40 shape classification
 - [x] Reproduce PTv3 on S3DIS semantic segmentation
-- [ ] Finish code for PT-BNN
+- [x] Finish code for PT-BNN
 - [x] Visualize serialization
 - [x] Visualize uncertainty quantification
+- [ ] Dynamic DataLoading, try to make total points in a batch same
 
 ## Data
 

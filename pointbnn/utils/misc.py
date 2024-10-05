@@ -73,6 +73,12 @@ def intersection_and_union_gpu(output, target, k, ignore_index=-1):
     area_output = torch.histc(output, bins=k, min=0, max=k - 1)
     area_target = torch.histc(target, bins=k, min=0, max=k - 1)
     area_union = area_output + area_target - area_intersection
+    print('Debugging intersection_and_union_gpu function:')
+    print('Intersection:', intersection)
+    print('Area Intersection:', area_intersection)
+    print('Area Output:', area_output)
+    print('Area Target:', area_target)
+    print('Area Union:', area_union)
     return area_intersection, area_union, area_target
 
 def get_linear_weight(current_epoch, max_epoch, weight_init=1e-2, weight_final=1.0):

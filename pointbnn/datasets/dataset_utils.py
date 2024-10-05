@@ -34,19 +34,34 @@ def collate_fn(batch):
         return default_collate(batch)
 
 
-def point_collate_fn(batch, mix_prob=0, split_up=False):
-    assert isinstance(batch[0], Mapping)  # currently, only support input_dict, rather than input_list
-    batch = collate_fn(batch)
-    if "offset" in batch.keys():
-        if split_up:
-            offset = batch["offset"]
-            max_pc = max(offset)
-            raise NotImplementedError
-        # Mix3d (https://arxiv.org/pdf/2110.02210.pdf)
-        if random.random() < mix_prob:
-            batch["offset"] = torch.cat([batch["offset"][1:-1:2], batch["offset"][-1].unsqueeze(0)], dim=0)
-    return batch
-
+def point_collate_fn(batch, mix_prob=0, dynamic_batching=False, max_points_per_batch=1e7):
+    if dynamic_batching:
+        assert len(batch[0]) == 2, "batch[0]=[data_dict, num_points]"
+        batch = sorted(batch, key=lambda x:x[1], reverse=True)
+        data_dicts, point_counts = zip(*batch)
+        current_batch = []
+        current_points = 0
+        sub_batches = []
+        for data, num_points in zip(data_dicts, point_counts):
+            if current_points + num_points > max_points_per_batch:
+                current_batch = point_collate_fn(current_batch)
+                sub_batches.append(current_batch)
+                current_batch = []
+                current_points = 0
+            current_batch.append(data)
+            current_points += num_points
+        if current_batch:
+            current_batch = point_collate_fn(current_batch)
+            sub_batches.append(current_batch)
+        return sub_batches
+    else:
+        assert isinstance(batch[0], Mapping)  # currently, only support input_dict, rather than input_list
+        batch = collate_fn(batch)
+        if "offset" in batch.keys():
+            # Mix3d (https://arxiv.org/pdf/2110.02210.pdf)
+            if random.random() < mix_prob:
+                batch["offset"] = torch.cat([batch["offset"][1:-1:2], batch["offset"][-1].unsqueeze(0)], dim=0)
+        return batch
 
 def gaussian_kernel(dist2: np.array, a: float = 1, c: float = 5):
     """

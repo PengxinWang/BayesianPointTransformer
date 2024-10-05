@@ -7,7 +7,7 @@ class Criteria(object):
         self.cfg = cfg if cfg is not None else []
         self.criteria = []
         for loss_cfg in self.cfg:
-            self.criteria.append(LOSSES.wbuild(cfg=loss_cfg))
+            self.criteria.append(LOSSES.build(cfg=loss_cfg))
 
     def __call__(self, pred, target):
         if len(self.criteria) == 0:

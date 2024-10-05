@@ -58,11 +58,7 @@ class DefaultDataset(Dataset):
 
         self.data_list = self.get_data_list()
         self.logger = get_root_logger()
-        self.logger.info(
-            "Totally {} x {} samples in {} set.".format(
-                len(self.data_list), self.loop, split
-            )
-        )
+        self.logger.info("Totally {} x {} samples in {} set.".format(len(self.data_list), self.loop, split))
 
     def get_data_list(self):
         if isinstance(self.split, str):
@@ -162,29 +158,32 @@ class DefaultDataset(Dataset):
                          
         return result_dict
 
-    def visualize_dataset(self, save_path):
-        counts = []
+    def n_points_statistics(self, visualize=False, save_path=None):
+        count_n_points = []
         for idx in range(len(self.data_list)):
             data = self.get_data(idx)
-            counts.append(data["coord"].shape[0])
-        counts = np.array(counts)
-        max_index = np.argmax(counts)
-        max_data_name = self.get_data_name(max_index)
-        min_index = np.argmin(counts)
-        min_data_name = self.get_data_name(min_index)        
-        mean = np.mean(counts)
-        std = np.std(counts)
-        plt.style.use('ggplot')
-        _ = plt.figure(figsize=(10,6))
-        sns.histplot(counts)
-        plt.axvline(counts[max_index], color='r', linestyle='--', label=f'{max_data_name}')
-        plt.axvline(counts[min_index], color='g', linestyle='--', label=f'{min_data_name}')
-        plt.axvline(mean, color='b', linestyle='--', label=f'mean:{mean}\nstd:{std}')
-        plt.xlabel(f'Num of Points')
-        plt.ylabel(f'Frequency')
-        plt.title(f'Basic Statistics on S3DIS dataset')   
-        plt.legend()     
-        plt.savefig(os.path.join(save_path, f'dataset.png'))
+            count_n_points.append(data["coord"].shape[0])
+        count_n_points = np.array(count_n_points)
+        max_index = np.argmax(count_n_points)
+        max_count = count_n_points[max_index]
+        min_index = np.argmin(count_n_points)
+        min_count = count_n_points[min_index] 
+        mean = int(np.mean(count_n_points))
+        std = int(np.std(count_n_points))
+        self.logger.info(f"Dataset statistics on num_of_points:\n mean:{mean}, std:{std}, max:{max_count}, min:{min_count}")
+        if visualize:
+            assert save_path is not None, "Please specify save_path for img"
+            plt.style.use('ggplot')
+            _ = plt.figure(figsize=(10,6))
+            sns.histplot(count_n_points)
+            plt.axvline(max_count, color='r', linestyle='--', label=f'{self.get_data_name(max_index)}')
+            plt.axvline(min_count, color='g', linestyle='--', label=f'{self.get_data_name(min_index)}')
+            plt.axvline(mean, color='b', linestyle='--', label=f'mean:{mean}\nstd:{std}')
+            plt.xlabel(f'Num of Points')
+            plt.ylabel(f'Frequency')
+            plt.title(f'Basic Statistics on dataset')   
+            plt.legend()     
+            plt.savefig(os.path.join(save_path, f'dataset.png'))
 
     def vis_pcd(self, save_path):
         raise NotImplementedError
@@ -197,6 +196,38 @@ class DefaultDataset(Dataset):
 
     def __len__(self):
         return len(self.data_list) * self.loop
+
+@DATASETS.register_module()
+class DynamicDataset(Dataset):
+    def __init__(
+        self, 
+        split="train",
+        data_root="data/dataset",
+        transform=None,
+        test_mode=False,
+        test_cfg=None,
+        cache=False,
+        ignore_index=-1,
+        loop=1,):
+        super().__init__()
+        self.dataset = DefaultDataset(
+            split=split,
+            data_root=data_root,
+            transform=transform,
+            test_mode=test_mode,
+            test_cfg=test_cfg,
+            cache=cache,
+            ignore_index=ignore_index,
+            loop=loop,)
+    
+    def __len__(self):
+        return len(self.dataset)
+    
+    def __getitem__(self, idx):
+        data_dict = self.dataset.get_data(idx)
+        data_dict = self.dataset.transform(data_dict)
+        n_points = data_dict["coord"].shape[0]
+        return data_dict, n_points
 
 @DATASETS.register_module()
 class ConcatDataset(Dataset):
