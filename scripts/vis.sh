@@ -4,8 +4,8 @@ PYTHON=python3
 VIS_CODE=vis.py
 
 DATASET=S3DIS
-CONFIG=semseg_ptv3_small
-EXP_NAME=semseg_ptv3_small
+CONFIG=semseg_ptbnn_small_dynamic_batch
+EXP_NAME=semseg_ptbnn_small_dynamic_batch
 
 echo "Experiment name: $EXP_NAME"
 echo "Dataset: $DATASET"

@@ -8,9 +8,18 @@
 - [x] Reproduce Point Transformer v3 on ModelNet40 shape classification
 - [x] Reproduce PTv3 on S3DIS semantic segmentation
 - [x] Finish code for PT-BNN
+    - [ ] projection only; attentino only
 - [x] Visualize serialization
-- [x] Visualize uncertainty quantification
-- [ ] Dynamic DataLoading, try to make total points in a batch same
+    - [ ] clustering property; density imbalance
+- [ ] Visualize uncertainty quantification
+- [x] Dynamic DataLoading, try to make total points in a batch same
+- [x] Balanced CE Loss
+- [ ] Centralized RPE(cRPE)
+- [ ] Grouped vector attention
+- [ ] Tune proper grid_size and sphere crop
+
+## Note:
+- Train grid size need to match val/test grid size
 
 ## Data
 

@@ -373,6 +373,7 @@ class DynamicTrainer(TrainerBase):
                 )
             self.optimizer.step()
             self.scheduler.step()
+        # hooks during training to inspect memory usage
         for h in self.hooks:
             h.run_step()
         if self.cfg.empty_cache:
@@ -474,7 +475,7 @@ class DynamicTrainer(TrainerBase):
     def build_scheduler(self):
         assert hasattr(self, "optimizer")
         assert hasattr(self, "train_loader")
-        self.cfg.scheduler.total_steps = len(self.train_loader) * self.cfg.eval_epoch
+        self.cfg.scheduler.total_steps = len(self.train_loader) * self.cfg.eval_epoch * 4
         return build_scheduler(self.cfg.scheduler, self.optimizer)
 
     def build_scaler(self):

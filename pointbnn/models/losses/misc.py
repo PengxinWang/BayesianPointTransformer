@@ -254,45 +254,26 @@ class TverskyLoss(nn.Module):
             print(f'debug: negative TverskyLoss {loss}')
         return self.loss_weight * loss
 
-@LOSSES.register_module("BalancedFocalLoss")
-class BalancedFocalLoss(nn.Module):
+@LOSSES.register_module("BalancedCELoss")
+class BalancedCELoss(nn.Module):
     def __init__(
-        self, gamma=2.0, alpha=0.5, reduction="mean", loss_weight=1.0, ignore_index=-1
+        self, gamma=1.0, reduction="mean", loss_weight=1.0, ignore_index=-1
     ):
-        """Focal Loss
-        <https://arxiv.org/abs/1708.02002>`
-        """
-        super(FocalLoss, self).__init__()
-        assert reduction in ("mean","sum",), "AssertionError: reduction should be 'mean' or 'sum'"
-        assert isinstance(alpha, (float, list)), "AssertionError: alpha should be of type float"
-        assert isinstance(gamma, float), "AssertionError: gamma should be of type float"
+        super().__init__()
+        assert reduction in ("mean","sum",)
         assert isinstance(loss_weight, float), "AssertionError: loss_weight should be of type float"
         assert isinstance(ignore_index, int), "ignore_index must be of type int"
         self.gamma = gamma
-        self.alpha = alpha
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.ignore_index = ignore_index
-        self.class_count = []
 
     def forward(self, pred, target):
         """Forward function.
         Args:
             pred (torch.Tensor): The prediction with shape (N, C) where C = number of classes.
-            target (torch.Tensor): The ground truth. If containing class
-                indices, shape (N) where each value is 0≤targets[i]≤C−1, If containing class probabilities,
-                same shape as the input.
-        Returns:
-            torch.Tensor: The calculated loss
+            target (torch.Tensor): The ground truth with shape N.
         """
-        # [B, C, d_1, d_2, ..., d_k] -> [C, B, d_1, d_2, ..., d_k]
-        pred = pred.transpose(0, 1)
-        # [C, B, d_1, d_2, ..., d_k] -> [C, N]
-        pred = pred.reshape(pred.size(0), -1)
-        # [C, N] -> [N, C]
-        pred = pred.transpose(0, 1).contiguous()
-        # (B, d_1, d_2, ..., d_k) --> (B * d_1 * d_2 * ... * d_k,)
-        target = target.view(-1).contiguous()
         assert pred.size(0) == target.size(0), "The shape of pred doesn't match the shape of target"
         valid_mask = target != self.ignore_index
         target = target[valid_mask]
@@ -300,24 +281,9 @@ class BalancedFocalLoss(nn.Module):
         if len(target) == 0:
             return 0.0
         num_classes = pred.size(1)
-        target = F.one_hot(target, num_classes=num_classes)
-        
-        alpha = self.alpha
-        if isinstance(alpha, list):
-            alpha = pred.new_tensor(alpha)
-        pred_sigmoid = pred.sigmoid()
-        target = target.type_as(pred)
-        one_minus_pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
-        focal_weight = (alpha * target + (1 - alpha) * (1 - target)) * one_minus_pt.pow(
-            self.gamma
-        )
-
-        loss = (
-            F.binary_cross_entropy_with_logits(pred, target, reduction="none")
-            * focal_weight
-        )
-        if self.reduction == "mean":
-            loss = loss.mean()
-        elif self.reduction == "sum":
-            loss = loss.total()
+        class_counts = torch.bincount(target, minlength=num_classes)
+        class_weights = 1./(class_counts + 1e-6)
+        class_weights = class_weights / class_weights.sum()
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
+        loss= criterion(pred, target)
         return self.loss_weight * loss

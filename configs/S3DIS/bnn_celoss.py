@@ -60,8 +60,8 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        # dict(type="CrossEntropyLoss", loss_weight=0.5, ignore_index=-1),
-        dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
+        dict(type="CrossEntropyLoss", loss_weight=0.75, ignore_index=-1),
+        # dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
         dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
     ],
 )
@@ -81,7 +81,6 @@ scheduler = dict(
 # )
 
 param_dicts = [dict(keyword="block", lr=0.001),
-             # dict(keyword="Sto", lr=1e-3),
                ]
 
 # dataset settings
@@ -124,7 +123,7 @@ data = dict(
             dict(type="ChromaticJitter", p=0.95, std=0.05),
             dict(
                 type="GridSample",
-                grid_size=0.10,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,

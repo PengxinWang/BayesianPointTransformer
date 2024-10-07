@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=semseg_ptbnn_small_dynamic_batch
-EXP_NAME=semseg_ptbnn_small_dynamic_batch
+CONFIG=bnn_wceloss
+EXP_NAME=bnn_wceloss
 WEIGHT=None
 RESUME=false
 GPU=None

@@ -8,8 +8,8 @@ num_worker = 8
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 300 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 100
+epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 
 # model settings
 model = dict(
@@ -60,14 +60,14 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        # dict(type="CrossEntropyLoss", loss_weight=0.5, ignore_index=-1),
-        dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
+        dict(type="WeightedCELoss", loss_weight=1., ignore_index=-1),
+        # dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
         dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="AdamW", lr=0.01, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.01, 0.001],
@@ -81,7 +81,6 @@ scheduler = dict(
 # )
 
 param_dicts = [dict(keyword="block", lr=0.001),
-             # dict(keyword="Sto", lr=1e-3),
                ]
 
 # dataset settings
@@ -124,7 +123,7 @@ data = dict(
             dict(type="ChromaticJitter", p=0.95, std=0.05),
             dict(
                 type="GridSample",
-                grid_size=0.10,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,

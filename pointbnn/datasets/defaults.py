@@ -141,7 +141,7 @@ class DefaultDataset(Dataset):
         for data in data_dict_list:
             if self.test_voxelize is not None:
                 data_part_list = self.test_voxelize(data)
-                self.logger.info(f'len of data_part_list: {len(data_part_list)}')
+                self.logger.info(f'data are partitioned into {len(data_part_list)} fragments')
             else:
                 data["index"] = np.arange(data["coord"].shape[0])
                 data_part_list = [data]
@@ -154,8 +154,7 @@ class DefaultDataset(Dataset):
 
         for i in range(len(fragment_list)):
             fragment_list[i] = self.post_transform(fragment_list[i])
-        result_dict["fragment_list"] = fragment_list
-                         
+        result_dict["fragment_list"] = fragment_list                        
         return result_dict
 
     def n_points_statistics(self, visualize=False, save_path=None):

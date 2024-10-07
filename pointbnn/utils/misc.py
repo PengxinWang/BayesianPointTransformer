@@ -38,14 +38,6 @@ def intersection_and_union(output, target, K, ignore_index=-1):
 
     Return:
         area_intersection: number of intersection of each_class, len(area_interaction)=K
-
-    e.g. 
-    >>> output = [[1,2],[1,2]]
-    >>> target = [[1,2],[0,2]]
-    >>> K = 3
-    >>> return: area_intersection = [0, 1, 2]
-                area_union = [0, 2, 2]
-                area_target = [0, 1, 2]
     """
     # 'K' classes, output and target sizes are N or N * L, each value in range 0 to K - 1.
     assert output.ndim in [1, 2, 3]
@@ -62,7 +54,6 @@ def intersection_and_union(output, target, K, ignore_index=-1):
 
 
 def intersection_and_union_gpu(output, target, k, ignore_index=-1):
-    # 'K' classes, output and target sizes are N or N * L or N * H * W, each value in range 0 to K - 1.
     assert output.dim() in [1, 2, 3]
     assert output.shape == target.shape
     output = output.view(-1)
@@ -73,12 +64,6 @@ def intersection_and_union_gpu(output, target, k, ignore_index=-1):
     area_output = torch.histc(output, bins=k, min=0, max=k - 1)
     area_target = torch.histc(target, bins=k, min=0, max=k - 1)
     area_union = area_output + area_target - area_intersection
-    print('Debugging intersection_and_union_gpu function:')
-    print('Intersection:', intersection)
-    print('Area Intersection:', area_intersection)
-    print('Area Output:', area_output)
-    print('Area Target:', area_target)
-    print('Area Union:', area_union)
     return area_intersection, area_union, area_target
 
 def get_linear_weight(current_epoch, max_epoch, weight_init=1e-2, weight_final=1.0):

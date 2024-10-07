@@ -496,8 +496,6 @@ class EventStorage:
 
     def reset_histories(self):
         for name in self._history.keys():
-            print(f'debug 1: {name}')
-            print(self._history[name])
             self._history[name].reset()
 
 
