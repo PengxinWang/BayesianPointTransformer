@@ -3,6 +3,7 @@ import warnings
 from collections import abc
 import numpy as np
 import torch
+import torch.nn.functional as F
 from importlib import import_module
 
 
@@ -70,7 +71,8 @@ def get_linear_weight(current_epoch, max_epoch, weight_init=1e-2, weight_final=1
     epoch_weight = weight_init + (current_epoch/max_epoch)*(weight_final-weight_init)
     return epoch_weight
 
-def point_wise_entropy(prob, type='predictive'):
+def point_wise_entropy(logits, type='predictive'):
+    prob = F.softmax(logits, dim=-1)
     if type=='predictive':
         # prob.shape = [N, C]
         # entropy.shape = [N,]

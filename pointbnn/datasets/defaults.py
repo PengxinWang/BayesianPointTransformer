@@ -124,7 +124,6 @@ class DefaultDataset(Dataset):
     def prepare_test_data(self, idx):
         # load data
         data_dict = self.get_data(idx)
-        self.logger.info(f'got test data:\n name:{data_dict["name"]}\n')
         data_dict = self.transform(data_dict)
         result_dict = dict(segment=data_dict.pop("segment"), name=data_dict.pop("name"))
         if "origin_segment" in data_dict:
@@ -141,7 +140,6 @@ class DefaultDataset(Dataset):
         for data in data_dict_list:
             if self.test_voxelize is not None:
                 data_part_list = self.test_voxelize(data)
-                self.logger.info(f'data are partitioned into {len(data_part_list)} fragments')
             else:
                 data["index"] = np.arange(data["coord"].shape[0])
                 data_part_list = [data]

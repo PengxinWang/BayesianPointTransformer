@@ -404,22 +404,23 @@ class BayesSemSegTester(TesterBase):
                             fragment_num=len(fragment_list),
                         )
                     )
-
                 nzero_mask = (seg_count != 0)
-                pred[nzero_mask] = torch.div(pred[nzero_mask], seg_count[nzero_mask])
+                pred[nzero_mask] = torch.div(pred[nzero_mask], seg_count[nzero_mask].unsqueeze(1))
                 aleatoric[nzero_mask] = torch.div(aleatoric[nzero_mask], seg_count[nzero_mask])
                 epistemic[nzero_mask] = torch.div(epistemic[nzero_mask], seg_count[nzero_mask])
                 aleatoric = aleatoric.detach().cpu()
                 epistemic = epistemic.detach().cpu()
-                uncertainty = {'aletoric': aleatoric, 'epistemic': epistemic}
 
                 pred = pred.max(1)[1].detach().cpu().numpy()
                 if "origin_segment" in data_dict.keys():
                     assert "inverse" in data_dict.keys()
                     pred = pred[data_dict["inverse"]]
+                    aleatoric = aleatoric[data_dict["inverse"]]
+                    epistemic = epistemic[data_dict["inverse"]]
                     segment = data_dict["origin_segment"]
                 np.save(pred_save_path, pred)
-                torch.save(uncertainty_save_path, uncertainty)
+                uncertainty = {'aletoric': aleatoric, 'epistemic': epistemic}
+                torch.save(uncertainty, uncertainty_save_path)
             intersection, union, target = intersection_and_union(
                 pred, segment, self.cfg.data.num_classes, self.cfg.data.ignore_index
             )
@@ -499,6 +500,10 @@ class BayesSemSegTester(TesterBase):
                     )
                 )
             logger.info("<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<")
+
+    @staticmethod
+    def collate_fn(batch):
+        return batch
 
 @TESTERS.register_module()
 class ClsTester(TesterBase):

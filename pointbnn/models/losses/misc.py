@@ -282,7 +282,7 @@ class BalancedCELoss(nn.Module):
             return 0.0
         num_classes = pred.size(1)
         class_counts = torch.bincount(target, minlength=num_classes)
-        class_weights = 1./(class_counts + 1e-6)
+        class_weights = 1./(class_counts + 1)
         class_weights = class_weights / class_weights.sum()
         criterion = nn.CrossEntropyLoss(weight=class_weights)
         loss= criterion(pred, target)

@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=bnn_wceloss
-EXP_NAME=bnn_wceloss
+CONFIG=bnn_balanced_large_sphere
+EXP_NAME=bnn_balanced_large_sphere
 WEIGHT=None
 RESUME=false
 GPU=None

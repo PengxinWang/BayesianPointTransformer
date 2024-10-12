@@ -1,15 +1,16 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 32  # bs: total bs in all gpus
-dynamic_batching = True
-max_points_per_batch=100000
-num_worker = 8  
+batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+# dynamic_batching = True
+# max_points_per_batch=150000
+# num_worker = 8
+num_worker = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 300 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 100
+epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 
 # model settings
 model = dict(
@@ -29,7 +30,7 @@ model = dict(
     backbone=dict(
         type="PT-BNN",
         in_channels=6,
-        order=("z", "z-trans", "hilbert-trans"),
+        order=("z", "z-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 4, 2),
         enc_channels=(16, 32, 64, 128, 256),
@@ -60,24 +61,24 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        dict(type="CrossEntropyLoss", loss_weight=0.75, ignore_index=-1),
+        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1),
         # dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
         dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="AdamW", lr=0.01, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
 scheduler = dict(
-    type="OneCycleLR",
-    max_lr=[0.01, 0.001],
-    pct_start=0.05,
-    anneal_strategy="cos",
-    div_factor=10.0,
-    final_div_factor=1000.0,
+    type = "DynamicMultiStepWithWarmupLR",
 )
 # scheduler = dict(
-#     type="CosineAnnealingLR",
+#     type="OneCycleLR",
+#     max_lr=[0.01, 0.001],
+#     pct_start=0.05,
+#     anneal_strategy="cos",
+#     div_factor=10.0,
+#     final_div_factor=1000.0,
 # )
 
 param_dicts = [dict(keyword="block", lr=0.001),
@@ -129,7 +130,7 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=51200, mode="random"),
+            dict(type="SphereCrop", point_max=102400, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             # dict(type="ShufflePoint"),
@@ -184,22 +185,9 @@ data = dict(
         split="Area_5",
         data_root=data_root,
         transform=[
-            dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(type="CenterShift", apply_z=True),
             dict(type="NormalizeColor"),
-            dict(
-                type="GridSample",
-                grid_size=0.025,
-                hash_type="fnv",
-                mode="train",
-                keys=("coord", "strength", "segment"),
-                return_inverse=True,
-             ),
         ],
-        # transform=[
-        #     dict(type="CenterShift", apply_z=True),
-        #     dict(type="NormalizeColor"),
-        # ],
         test_mode=True,
         test_cfg=dict(
             voxelize=dict(
@@ -209,7 +197,6 @@ data = dict(
                 mode="test",
                 keys=("coord", "color", "normal"),
                 return_grid_coord=True,
-                max_count=60,
             ),
             crop=None,
             post_transform=[

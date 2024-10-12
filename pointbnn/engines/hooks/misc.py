@@ -206,6 +206,7 @@ class GPUMemoryInspector(HookBase):
 @HOOKS.register_module()
 class DynamicInformationWriter(HookBase):
     def __init__(self):
+        # curr_iter: num of global iterations
         self.curr_iter = 0
         self.model_output_keys = []
 
@@ -215,7 +216,7 @@ class DynamicInformationWriter(HookBase):
 
     def before_step(self):
         self.curr_iter += 1
-        info = "Train: [{epoch}/{max_epoch}][{iter}] ".format(
+        info = "Train: [{epoch}/{max_epoch}][{iter}/unknown] ".format(
             epoch=self.trainer.epoch + 1,
             max_epoch=self.trainer.max_epoch,
             iter=self.trainer.comm_info["iter"] + 1,

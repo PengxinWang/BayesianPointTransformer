@@ -15,6 +15,8 @@ from pointbnn.models.model_utils.misc import offset2bincount
 from pointbnn.models.model_utils.structure import Point
 from pointbnn.models.builder import MODELS
 from pointbnn.models.model_utils.bayesian import StoLinear
+from pointbnn.utils.logger import get_root_logger
+debug_logger = get_root_logger()
 
 class RPE(torch.nn.Module):
     def __init__(self, patch_size, num_heads):
@@ -27,11 +29,12 @@ class RPE(torch.nn.Module):
         torch.nn.init.trunc_normal_(self.rpe_table, std=0.02)
 
     def forward(self, coord):
+        # coord: (N,K,K,3), output: (N,H,K,K)
         idx = (
             coord.clamp(-self.pos_bnd, self.pos_bnd)  # clamp into bnd
             + self.pos_bnd  # relative position to positive index
             + torch.arange(3, device=coord.device) * self.rpe_num  # x, y, z stride
-        )
+        ) 
         out = self.rpe_table.index_select(0, idx.reshape(-1))
         out = out.view(idx.shape + (-1,)).sum(3)
         out = out.permute(0, 3, 1, 2)  # (N, K, K, H) -> (N, H, K, K)
@@ -94,8 +97,10 @@ class SerializedAttention(PointModule):
         if rel_pos_key not in point.keys():
             grid_coord = point.grid_coord[order]
             grid_coord = grid_coord.reshape(-1, K, 3)
-            point[rel_pos_key] = grid_coord.unsqueeze(2) - grid_coord.unsqueeze(1)
+            point[rel_pos_key] = grid_coord.unsqueeze(2) - grid_coord.unsqueeze(1)       
         return point[rel_pos_key]
+    
+    @torch.no_grad()
 
     @torch.no_grad()
     def get_padding_and_inverse(self, point):
@@ -264,6 +269,7 @@ class Block(PointModule):
                 bias=True,
                 indice_key=cpe_indice_key,
             ),
+            # nn.Linear(channels, channels),
             StoLinear(channels, channels, n_components=n_components,
                       prior_mean=prior_mean, prior_std=prior_std,
                       post_mean_init=post_mean_init, post_std_init=post_std_init),

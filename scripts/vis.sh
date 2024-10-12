@@ -21,7 +21,7 @@ else
     CONFIG_DIR=configs/${DATASET}/${CONFIG}.py
 fi
 
-cp -r scripts tools weaver "$CODE_DIR"
+cp -r scripts tools pointbnn "$CODE_DIR"
 
 echo "Loading config in:" $CONFIG_DIR
 export PYTHONPATH=./$CODE_DIR

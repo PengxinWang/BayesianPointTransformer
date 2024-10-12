@@ -4,8 +4,8 @@ PYTHON=python3
 TEST_CODE=test.py
 
 DATASET=S3DIS
-CONFIG=semseg_ptbnn_small
-EXP_NAME=semseg_ptbnn_small
+CONFIG=bnn_balanced_large_sphere
+EXP_NAME=bnn_balanced_large_sphere
 WEIGHT=model_best
 GPU=None
 
@@ -30,7 +30,7 @@ else
     CONFIG_DIR=configs/${DATASET}/${CONFIG}.py
 fi
 
-cp -r scripts tools weaver "$CODE_DIR"
+cp -r scripts tools pointbnn "$CODE_DIR"
 
 echo "Loading config in:" $CONFIG_DIR
 export PYTHONPATH=./$CODE_DIR

@@ -333,6 +333,7 @@ class DynamicTrainer(TrainerBase):
                         self.before_step()
                         self.run_step()
                         self.after_step()
+                self.comm_info["iter"] = 0
                 self.after_epoch()
             self.after_train()
 
@@ -475,7 +476,8 @@ class DynamicTrainer(TrainerBase):
     def build_scheduler(self):
         assert hasattr(self, "optimizer")
         assert hasattr(self, "train_loader")
-        self.cfg.scheduler.total_steps = len(self.train_loader) * self.cfg.eval_epoch * 4
+        dynamic_epochs_tol = len(self.train_loader) * self.cfg.eval_epoch
+        self.cfg.scheduler.milestones = [dynamic_epochs_tol*2, dynamic_epochs_tol*4]
         return build_scheduler(self.cfg.scheduler, self.optimizer)
 
     def build_scaler(self):

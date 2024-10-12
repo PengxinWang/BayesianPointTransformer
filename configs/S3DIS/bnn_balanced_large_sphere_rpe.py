@@ -1,9 +1,9 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 32  # bs: total bs in all gpus
+batch_size = 48  # bs: total bs(num_pointclouds_per_batch) in all gpu
 dynamic_batching = True
-max_points_per_batch=100000
+max_points_per_batch=140000
 num_worker = 8  
 mix_prob = 0.8
 empty_cache = True
@@ -29,7 +29,7 @@ model = dict(
     backbone=dict(
         type="PT-BNN",
         in_channels=6,
-        order=("z", "z-trans", "hilbert-trans"),
+        order=("z", "z-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 4, 2),
         enc_channels=(16, 32, 64, 128, 256),
@@ -39,7 +39,7 @@ model = dict(
         dec_channels=(16, 32, 64, 128),
         dec_num_head=(2, 2, 4, 4),
         dec_patch_size=(64, 64, 64, 64),
-        mlp_ratio=4,
+        mlp_ratio=2,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
@@ -47,7 +47,7 @@ model = dict(
         drop_path=0.0,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=False,
+        enable_rpe=True,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
@@ -60,7 +60,8 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        dict(type="WeightedCELoss", loss_weight=1., ignore_index=-1),
+        dict(type="CrossEntropyLoss", loss_weight=1., ignore_index=-1),        
+        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1),
         # dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
         dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
     ],
@@ -69,15 +70,15 @@ model = dict(
 # scheduler settings
 optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
 scheduler = dict(
-    type="OneCycleLR",
-    max_lr=[0.01, 0.001],
-    pct_start=0.05,
-    anneal_strategy="cos",
-    div_factor=10.0,
-    final_div_factor=1000.0,
+    type = "DynamicMultiStepWithWarmupLR",
 )
 # scheduler = dict(
-#     type="CosineAnnealingLR",
+#     type="OneCycleLR",
+#     max_lr=[0.01, 0.001],
+#     pct_start=0.05,
+#     anneal_strategy="cos",
+#     div_factor=10.0,
+#     final_div_factor=1000.0,
 # )
 
 param_dicts = [dict(keyword="block", lr=0.001),
@@ -129,7 +130,7 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=51200, mode="random"),
+            dict(type="SphereCrop", point_max=102400, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             # dict(type="ShufflePoint"),

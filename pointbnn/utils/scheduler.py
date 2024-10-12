@@ -55,6 +55,38 @@ class MultiStepWithWarmupLR(lr_scheduler.LambdaLR):
             last_epoch=last_epoch,
         )
 
+@SCHEDULERS.register_module()
+class DynamicMultiStepWithWarmupLR(lr_scheduler.LambdaLR):
+    def __init__(
+        self,
+        optimizer,
+        milestones,
+        gamma=0.1,
+        warmup_rate=0.05,
+        warmup_scale=1e-6,
+        last_epoch=-1,
+    ):
+
+        def multi_step_with_warmup(s):
+            factor = 1.0
+            for i in range(len(milestones)):
+                if s < milestones[i]:
+                    break
+                factor *= gamma
+
+            if s <= warmup_rate * milestones[0]:
+                warmup_coefficient = 1 - (1 - s / warmup_rate / milestones[0]) * (
+                    1 - warmup_scale
+                )
+            else:
+                warmup_coefficient = 1.0
+            return warmup_coefficient * factor
+
+        super().__init__(
+            optimizer=optimizer,
+            lr_lambda=multi_step_with_warmup,
+            last_epoch=last_epoch,
+        )
 
 @SCHEDULERS.register_module()
 class PolyLR(lr_scheduler.LambdaLR):

@@ -30,20 +30,12 @@
 ### Preprocessing
 
 ### ModelNet40
-- how many classes/shape are there?
-    - 40
 - how many point clouds are there in the dataset?
     - trainset: 9843
     - val/testset: 2468
 - how many points are sampled in each point cloud?
     - raw: 10000 points
     - processed: 
-- what is the format of raw data?
-    - raw: .txt
-    - processed: .pth
-- scale of points
-    - raw scale: [-1,1]
-    - GridSample: gird_size=0.05
 
 ### S3DIS
 - download
@@ -69,7 +61,6 @@
     
 ## Methods
 ### Serialization
-- Hilbert encoding and decoding algorithm
 
 ### Positional Embedding
 - **RPE(Relative Positional Embedding):**
@@ -81,10 +72,6 @@
 
 ### Attention Mechanism
 
-### Patch Partition
-
-### Patch Interaction
-
 ### Layer Normalization
 - Layer Norm is more suitable for data with variable length
 
@@ -93,18 +80,10 @@
 ### Optimization
 - Optimizer: SGD, Adam, AdamW
     - AdamW
-
-- Param Group: speicify different learning hparam setting(lr, weight_decay, etc.) to different param groups
-    - **lr:** default=0.001, "block"=0.0001 
-    - **weight_decay:** default=0.01
-
-- Scheduler: OneCycleLR
 - Scaler: for calibrating precision between different GPUs
 - train_epochs: 300(default), 6(pilot)
 
 ## Evaluation
-
-**Note:** In shape classification, each shape is an instance; in semantic segmentation, each point/pixel is an instance.
 
 ### Shape Classification
 - **Note:** 'Acc' here is actually recall, calculated by TP/TP+FN; IoU is calculated by TP/TP+FP+FN

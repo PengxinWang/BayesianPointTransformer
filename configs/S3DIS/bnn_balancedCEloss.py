@@ -8,8 +8,8 @@ num_worker = 8
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 300 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 100
+epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 
 # model settings
 model = dict(
@@ -60,14 +60,14 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        dict(type="CrossEntropyLoss", loss_weight=0.75, ignore_index=-1),
+        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1),
         # dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
         dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="AdamW", lr=0.01, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.01, 0.001],
@@ -184,22 +184,9 @@ data = dict(
         split="Area_5",
         data_root=data_root,
         transform=[
-            dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(type="CenterShift", apply_z=True),
             dict(type="NormalizeColor"),
-            dict(
-                type="GridSample",
-                grid_size=0.025,
-                hash_type="fnv",
-                mode="train",
-                keys=("coord", "strength", "segment"),
-                return_inverse=True,
-             ),
         ],
-        # transform=[
-        #     dict(type="CenterShift", apply_z=True),
-        #     dict(type="NormalizeColor"),
-        # ],
         test_mode=True,
         test_cfg=dict(
             voxelize=dict(
@@ -209,7 +196,6 @@ data = dict(
                 mode="test",
                 keys=("coord", "color", "normal"),
                 return_grid_coord=True,
-                max_count=60,
             ),
             crop=None,
             post_transform=[
