@@ -356,6 +356,8 @@ class BayesSemSegTester(TesterBase):
             segment = data_dict.pop("segment")
             data_name = data_dict.pop("name")
             pred_save_path = os.path.join(save_path, "{}_pred.npy".format(data_name))
+            aleatoric_save_path = os.path.join(save_path, "{}_aleatoric.npy".format(data_name))
+            epistemic_save_path = os.path.join(save_path, "{}_epistemic.npy".format(data_name))
             uncertainty_save_path = os.path.join(save_path, "{}_uncertainty.pt".format(data_name))
             if os.path.isfile(pred_save_path):
                 logger.info(
@@ -419,8 +421,8 @@ class BayesSemSegTester(TesterBase):
                     epistemic = epistemic[data_dict["inverse"]]
                     segment = data_dict["origin_segment"]
                 np.save(pred_save_path, pred)
-                uncertainty = {'aletoric': aleatoric, 'epistemic': epistemic}
-                torch.save(uncertainty, uncertainty_save_path)
+                np.save(aleatoric_save_path, pred)
+                np.save(epistemic_save_path, pred)
             intersection, union, target = intersection_and_union(
                 pred, segment, self.cfg.data.num_classes, self.cfg.data.ignore_index
             )
