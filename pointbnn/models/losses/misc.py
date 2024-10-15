@@ -27,6 +27,30 @@ class CrossEntropyLoss(nn.Module):
             label_smoothing=label_smoothing,
         )
 
+@LOSSES.register_module()
+class CrossEntropyLoss(nn.Module):
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        reduce=None,
+        reduction="mean",
+        label_smoothing=0.0,
+        loss_weight=1.0,
+        ignore_index=-1,
+    ):
+        super(CrossEntropyLoss, self).__init__()
+        weight = torch.tensor(weight).cuda() if weight is not None else None
+        self.loss_weight = loss_weight
+        self.loss = nn.CrossEntropyLoss(
+            weight=weight,
+            size_average=size_average,
+            ignore_index=ignore_index,
+            reduce=reduce,
+            reduction=reduction,
+            label_smoothing=label_smoothing,
+        )
+
     def forward(self, pred, target):
         loss = self.loss(pred, target)
         return loss * self.loss_weight
@@ -153,7 +177,6 @@ class FocalLoss(nn.Module):
             loss = loss.total()
         return self.loss_weight * loss
 
-
 @LOSSES.register_module()
 class DiceLoss(nn.Module):
     def __init__(self, smooth=1, exponent=2, loss_weight=1.0, ignore_index=-1):
@@ -206,7 +229,7 @@ class DiceLoss(nn.Module):
 
 @LOSSES.register_module()
 class TverskyLoss(nn.Module):
-    def __init__(self, smooth=1, exponent=1, loss_weight=1.0, ignore_index=-1):
+    def __init__(self, smooth=1, exponent=1, loss_weight=1.0, ignore_index=-1, pred_logits=True):
         """TverskyLoss.
         """
         super().__init__()
@@ -216,8 +239,9 @@ class TverskyLoss(nn.Module):
         self.ignore_index = ignore_index
         self.fp_weight = 0.5
         self.fn_weight = 1.0
+        self.pred_logits = pred_logits
 
-    def forward(self, pred, target, **kwargs):
+    def forward(self, pred, target):
         # [B, C, d_1, d_2, ..., d_k] -> [C, B, d_1, d_2, ..., d_k]
         pred = pred.transpose(0, 1)
         # [C, B, d_1, d_2, ..., d_k] -> [C, N]
@@ -232,8 +256,8 @@ class TverskyLoss(nn.Module):
         valid_mask = target != self.ignore_index
         target = target[valid_mask]
         pred = pred[valid_mask]
-
-        pred = F.softmax(pred, dim=1)
+        if self.pred_logits:
+            pred = F.softmax(pred, dim=1)
         num_classes = pred.shape[1]
         target = F.one_hot(
             torch.clamp(target.long(), 0, num_classes - 1), num_classes=num_classes
@@ -250,8 +274,6 @@ class TverskyLoss(nn.Module):
                 tversky_loss = 1 - num / den
                 total_loss += tversky_loss
         loss = total_loss / num_classes
-        if loss < 0:
-            print(f'debug: negative TverskyLoss {loss}')
         return self.loss_weight * loss
 
 @LOSSES.register_module("BalancedCELoss")

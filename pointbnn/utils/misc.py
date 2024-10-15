@@ -72,16 +72,15 @@ def get_linear_weight(current_epoch, max_epoch, weight_init=1e-2, weight_final=1
     return epoch_weight
 
 def point_wise_entropy(logits, type='predictive'):
+    # prob.shape: [N, n_samples, C]
     prob = F.softmax(logits, dim=-1)
     if type=='predictive':
-        # prob.shape = [N, C]
-        # entropy.shape = [N,]
+        prob = torch.mean(prob, dim=1)
         entropy = - torch.sum(torch.mul(prob, torch.log(prob + 1e-10)), dim=-1)
     elif type=='aleatoric':
-        # prob.shape: [N, n_samples, C] --> [n_samples, N, C]
         prob = prob.transpose(0,1)
         entropy = - torch.sum(torch.mul(prob, torch.log(prob + 1e-10)), dim=-1)
-        entropy = - torch.mean(entropy, dim=0)
+        entropy = torch.mean(entropy, dim=0)
     return entropy
 
 def make_dirs(dir_name):

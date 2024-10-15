@@ -15,8 +15,6 @@ from pointbnn.models.model_utils.misc import offset2bincount
 from pointbnn.models.model_utils.structure import Point
 from pointbnn.models.builder import MODELS
 from pointbnn.models.model_utils.bayesian import StoLinear
-from pointbnn.utils.logger import get_root_logger
-debug_logger = get_root_logger()
 
 class RPE(torch.nn.Module):
     def __init__(self, patch_size, num_heads):
@@ -269,10 +267,10 @@ class Block(PointModule):
                 bias=True,
                 indice_key=cpe_indice_key,
             ),
-            # nn.Linear(channels, channels),
-            StoLinear(channels, channels, n_components=n_components,
-                      prior_mean=prior_mean, prior_std=prior_std,
-                      post_mean_init=post_mean_init, post_std_init=post_std_init),
+            nn.Linear(channels, channels),
+            # StoLinear(channels, channels, n_components=n_components,
+            #           prior_mean=prior_mean, prior_std=prior_std,
+            #           post_mean_init=post_mean_init, post_std_init=post_std_init),
             norm_layer(channels),
         )
 
@@ -361,9 +359,10 @@ class SerializedPooling(PointModule):
         self.shuffle_orders = shuffle_orders
         self.traceable = traceable
 
-        self.proj = StoLinear(in_channels, out_channels, n_components=n_components,
-                              prior_mean=prior_mean, prior_std=prior_std,
-                              post_mean_init=post_mean_init, post_std_init=post_std_init)
+        self.proj = nn.Linear(in_channels, out_channels)
+        # self.proj = StoLinear(in_channels, out_channels, n_components=n_components,
+        #                       prior_mean=prior_mean, prior_std=prior_std,
+        #                       post_mean_init=post_mean_init, post_std_init=post_std_init)
         if norm_layer is not None:
             self.norm = PointSequential(norm_layer(out_channels))
         if act_layer is not None:
@@ -453,10 +452,28 @@ class SerializedUnpooling(PointModule):
         norm_layer=None,
         act_layer=None,
         traceable=False,  # record parent and cluster
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.40, 
+        post_mean_init=(1.0, 0.05), 
+        post_std_init=(0.25, 0.10),
     ):
         super().__init__()
-        self.proj = PointSequential(StoLinear(in_channels, out_channels))
-        self.proj_skip = PointSequential(StoLinear(skip_channels, out_channels))
+        self.proj = PointSequential(nn.Linear(in_channels, out_channels))
+        self.proj_skip = PointSequential(nn.Linear(skip_channels, out_channels))
+
+        # self.proj = PointSequential(
+        #     StoLinear(in_channels, out_channels, n_components=n_components,
+        #     prior_mean=prior_mean, prior_std=prior_std,
+        #     post_mean_init=post_mean_init, post_std_init=post_std_init
+        #     )
+        # )
+        # self.proj_skip = PointSequential(
+        #     StoLinear(in_channels, out_channels, n_components=n_components,
+        #     prior_mean=prior_mean, prior_std=prior_std,
+        #     post_mean_init=post_mean_init, post_std_init=post_std_init
+        #     )
+        # )
 
         if norm_layer is not None:
             self.proj.add(norm_layer(out_channels))
@@ -637,7 +654,7 @@ class PointBNN(PointModule):
                         prior_mean=prior_mean,
                         prior_std=prior_std,
                         post_mean_init=post_mean_init,
-                        post_std_init=post_std_init
+                        post_std_init=post_std_init,
                     ),
                     name=f"block{i}",
                 )
@@ -664,6 +681,11 @@ class PointBNN(PointModule):
                         out_channels=dec_channels[s],
                         norm_layer=bn_layer,
                         act_layer=act_layer,
+                        n_components=n_components,
+                        prior_mean=prior_mean,
+                        prior_std=prior_std,
+                        post_mean_init=post_mean_init,
+                        post_std_init=post_std_init,
                     ),
                     name="up",
                 )
@@ -688,6 +710,11 @@ class PointBNN(PointModule):
                             enable_flash=enable_flash,
                             upcast_attention=upcast_attention,
                             upcast_softmax=upcast_softmax,
+                            n_components=n_components,
+                            prior_mean=prior_mean,
+                            prior_std=prior_std,
+                            post_mean_init=post_mean_init,
+                            post_std_init=post_std_init,
                         ),
                         name=f"block{i}",
                     )

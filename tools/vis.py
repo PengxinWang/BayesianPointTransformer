@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import torch
 import open3d as o3d
 import matplotlib.pyplot as plt
 
@@ -10,14 +9,24 @@ from pointbnn.engines.defaults import (
     default_config_parser,
 )
 
-def build_color_map(dataset="S3DISDataset", class_names=None, save_color_legend=False):
+def build_color_map(dataset="S3DISDataset", save_color_legend=False, class_names=None, vis_save_path=None):
     if dataset == "S3DISDataset":
         color_map = [[128,64,128], [244,35,232], [70,70,70], [102,102,156],
                        [190,153,153], [153,153,153], [250,170,30], [220,220,0],
                        [107,142,35], [151,251,152], [70,160,180], [220,20,60],
                        [255,0,0],]
         if save_color_legend:
-            assert class_names is not None
+            vis_save_path = os.path.join(vis_save_path, 'seg_color_map.png')
+            fig, ax = plt.subplots()
+            ax.set_xlim(0,1)
+            ax.set_ylim(0, len(color_map))
+            for i, color in enumerate(color_map):
+                rect=plt.Rectangle((0,i), 1, 1, color=np.array(color)/255)
+                ax.add_patch(rect)
+                ax.text(1.1, i+0.5, class_names[i], va='center', ha='left', fontsize=12)
+                ax.set_axis_off()
+            plt.savefig(vis_save_path, bbox_inches='tight')
+            plt.close()
     else:
         raise NotImplementedError
     return color_map
@@ -49,9 +58,7 @@ def plot_original_pc(data_dict, vis_save_path, return_camera_params=False):
     pc.colors=o3d.utility.Vector3dVector(color_normalized)
 
     vis=o3d.visualization.Visualizer()
-    vis.create_window(window_name='original_pc_{}'.format(data_dict["name"]),
-                      width=800,
-                      height=600)
+    vis.create_window(window_name='original_pc_{}'.format(data_dict["name"]),)
     
     vis.add_geometry(pc)
     vis.run()
@@ -73,9 +80,7 @@ def plot_seg_gd(data_dict, vis_save_path, color_map, camera_params=None):
     pc.colors=o3d.utility.Vector3dVector(color_normalized)
 
     vis=o3d.visualization.Visualizer()
-    vis.create_window(window_name='seg_gd_{}'.format(data_dict["name"]),
-                      width=800,
-                      height=600)
+    vis.create_window(window_name='seg_gd_{}'.format(data_dict["name"]),)
     vis.add_geometry(pc)
     if camera_params:
         ctr=vis.get_view_control()
@@ -112,20 +117,29 @@ def plot_seg_pred(data_dict, save_path, vis_save_path, color_map, camera_params=
 
 def plot_uc(data_dict, save_path, vis_save_path, uc_type='aleatoric', camera_params=None):
     vis_save_path = os.path.join(vis_save_path, '{}_{}.png'.format(uc_type, data_dict["name"]))
-    save_path = os.path.join(save_path, '{}_uncertainty.pt'.format(data_dict["name"]))
-    uncertainty = torch.load(save_path)[uc_type].numpy()
+    uc_path = os.path.join(save_path, '{}_{}.npy'.format(data_dict["name"], uc_type))
+    uncertainty = np.load(uc_path)
     uncertainty_normalized = (uncertainty - np.min(uncertainty))/(np.max(uncertainty)- np.min(uncertainty))
-    color = np.zeros((len(uncertainty_normalized), 3))
-    color[:, 2] = uncertainty_normalized
+    cmap = plt.get_cmap('hot')
+    color = cmap(uncertainty_normalized)[:, :3]
+
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1,2,1)
+    plt.hist(uncertainty, bins=30, color='skyblue')
+    plt.title("unnormalized uncertainty")
+
+    plt.subplot(1,2,2)
+    plt.hist(uncertainty_normalized, bins=30, color='skyblue')
+    plt.title("normalized uncertainty")
+    plt.show()
+
     pc = o3d.geometry.PointCloud()
     coord_normalized, _ = normalize(data_dict["coord"], color)
     pc.points=o3d.utility.Vector3dVector(coord_normalized)
     pc.colors=o3d.utility.Vector3dVector(color)
 
     vis=o3d.visualization.Visualizer()
-    vis.create_window(window_name='{}_{}'.format(uc_type, data_dict["name"]),
-                      width=800,
-                      height=600)
+    vis.create_window(window_name='{}_{}'.format(uc_type, data_dict["name"]), height=800, width=800)
     vis.add_geometry(pc)
     if camera_params:
         ctr=vis.get_view_control()
@@ -138,28 +152,23 @@ def plot_uc(data_dict, save_path, vis_save_path, uc_type='aleatoric', camera_par
 
 def main():
     args = default_argument_parser().parse_args()
-    args.config_file = f'D:\PointNet\PointNet\configs\S3DIS/bnn_balanced_large_sphere_rpe.py'
-    args.options = {"save_path": f'D:\PointNet\PointNet\exp\S3DIS/bnn_balanced_large_sphere'}
+    args.config_file = f'D:\PointNet\PointNet\configs\S3DIS/bnn_balanced_ce.py'
+    args.options = {"save_path": f'D:\PointNet\PointNet\exp\S3DIS/bnn_balanced_ce'}
     cfg = default_config_parser(args.config_file, args.options)
     test_dataset = build_dataset(cfg.data.test)
     save_path = os.path.join(cfg.save_path, "result")
     vis_save_path = os.path.join(cfg.save_path, "vis_result")
     os.makedirs(vis_save_path, exist_ok=True)
 
-    idx = 4
+    idx = 2
     data_dict = test_dataset.get_data(idx)
-    # camera_params = plot_original_pc(data_dict, vis_save_path, return_camera_params=True)
-    # color_map = build_color_map(dataset=cfg.dataset_type)
-    # plot_seg_gd(data_dict, vis_save_path, color_map, camera_params)
-    # plot_seg_pred(data_dict, save_path, vis_save_path, color_map, camera_params)
-    # plot_uc(data_dict, save_path, vis_save_path, 'epistemic', camera_params)
 
-    plot_original_pc(data_dict, vis_save_path, return_camera_params=False, rotating=True)
-    color_map = build_color_map(dataset=cfg.dataset_type)
+    plot_original_pc(data_dict, vis_save_path, return_camera_params=False)
+    color_map = build_color_map(cfg.dataset_type, True, cfg.data.names, vis_save_path)
     plot_seg_gd(data_dict, vis_save_path, color_map)
     plot_seg_pred(data_dict, save_path, vis_save_path, color_map)
-    plot_uc(data_dict, save_path, vis_save_path, 'aleatoric')
-    plot_uc(data_dict, save_path, vis_save_path, 'epistemic')
+    # plot_uc(data_dict, save_path, vis_save_path, 'aleatoric')
+    # plot_uc(data_dict, save_path, vis_save_path, 'epistemic')
 
 if __name__ == "__main__":
     main()

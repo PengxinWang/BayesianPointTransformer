@@ -1,35 +1,27 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 32  # bs: total bs in all gpus
+batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
 dynamic_batching = True
-max_points_per_batch=100000
-num_worker = 8  
+max_points_per_batch=150000
+num_worker = 8
+# num_worker = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 300 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 100
+epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 
 # model settings
 model = dict(
-    type="BayesSegmentor",
+    type="DefaultSegmentorV2",
     num_classes=13,
     backbone_out_channels=16,
-    n_components=4,
-    n_samples=4,
-    stochastic=True,
-    prior_mean=1.0, 
-    prior_std=0.10, 
-    post_mean_init=(1.0, 0.10), 
-    post_std_init=(0.10, 0.05),
-    kl_weight_init=1e-2,
-    kl_weight_final=1.0,
-    entropy_weight=0.5,
+    stochastic=False,
     backbone=dict(
-        type="PT-BNN",
+        type="PT-v3",
         in_channels=6,
-        order=("z", "z-trans", "hilbert-trans"),
+        order=("z", "z-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 4, 2),
         enc_channels=(16, 32, 64, 128, 256),
@@ -44,7 +36,7 @@ model = dict(
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.3,
         shuffle_orders=True,
         pre_norm=True,
         enable_rpe=False,
@@ -59,29 +51,27 @@ model = dict(
         pdnorm_affine=True,
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
-    criteria=[
-        # dict(type="CrossEntropyLoss", loss_weight=0.5, ignore_index=-1),
-        dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
-        dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
+    criteria=[    
+        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1),
+        dict(type="TverskyLoss", loss_weight=1., ignore_index=-1),
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="AdamW", lr=0.01, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
 scheduler = dict(
-    type="OneCycleLR",
-    max_lr=[0.01, 0.001],
-    pct_start=0.05,
-    anneal_strategy="cos",
-    div_factor=10.0,
-    final_div_factor=1000.0,
+    type = "DynamicMultiStepWithWarmupLR",
 )
 # scheduler = dict(
-#     type="CosineAnnealingLR",
+#     type="OneCycleLR",
+#     max_lr=[0.01, 0.001],
+#     pct_start=0.05,
+#     anneal_strategy="cos",
+#     div_factor=10.0,
+#     final_div_factor=1000.0,
 # )
 
 param_dicts = [dict(keyword="block", lr=0.001),
-             # dict(keyword="Sto", lr=1e-3),
                ]
 
 # dataset settings
@@ -124,13 +114,13 @@ data = dict(
             dict(type="ChromaticJitter", p=0.95, std=0.05),
             dict(
                 type="GridSample",
-                grid_size=0.10,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=51200, mode="random"),
+            dict(type="SphereCrop", point_max=102400, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             # dict(type="ShufflePoint"),
@@ -217,11 +207,11 @@ hooks = [
     dict(type="DynamicIterationTimer", warmup_iter=2),
     # dict(type="GPUMemoryInspector"),
     dict(type="DynamicInformationWriter"),
-    dict(type="BayesSemSegEvaluator"),
+    dict(type="SemSegEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
     # dict(type="PreciseEvaluator", test_last=False),
 ]
 
 train = dict(type="DynamicTrainer")
 
-test = dict(type='BayesSemSegTester', verbose=True)
+test = dict(type='SemSegTester', verbose=True)

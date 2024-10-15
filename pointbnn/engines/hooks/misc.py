@@ -216,7 +216,7 @@ class DynamicInformationWriter(HookBase):
 
     def before_step(self):
         self.curr_iter += 1
-        info = "Train: [{epoch}/{max_epoch}][{iter}/unknown] ".format(
+        info = "Train: [{epoch}/{max_epoch}][{iter}] ".format(
             epoch=self.trainer.epoch + 1,
             max_epoch=self.trainer.max_epoch,
             iter=self.trainer.comm_info["iter"] + 1,

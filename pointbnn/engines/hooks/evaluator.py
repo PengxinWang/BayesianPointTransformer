@@ -131,10 +131,10 @@ class SemSegEvaluator(HookBase):
                 self.trainer.cfg.data.num_classes,
                 self.trainer.cfg.data.ignore_index,
             )
-            if comm.get_world_size() > 1:
-                dist.all_reduce(intersection), dist.all_reduce(union), dist.all_reduce(
-                    target
-                )
+            # if comm.get_world_size() > 1:
+            #     dist.all_reduce(intersection), dist.all_reduce(union), dist.all_reduce(
+            #         target
+            #     )
             intersection, union, target = (
                 intersection.cpu().numpy(),
                 union.cpu().numpy(),

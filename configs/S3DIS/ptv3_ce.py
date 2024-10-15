@@ -1,10 +1,11 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 48  # bs: total bs(num_pointclouds_per_batch) in all gpu
+batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
 dynamic_batching = True
-max_points_per_batch=140000
-num_worker = 8  
+max_points_per_batch=150000
+num_worker = 8
+# num_worker = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
@@ -13,21 +14,12 @@ eval_epoch = 20
 
 # model settings
 model = dict(
-    type="BayesSegmentor",
+    type="DefaultSegmentorV2",
     num_classes=13,
     backbone_out_channels=16,
-    n_components=4,
-    n_samples=4,
-    stochastic=True,
-    prior_mean=1.0, 
-    prior_std=0.10, 
-    post_mean_init=(1.0, 0.10), 
-    post_std_init=(0.10, 0.05),
-    kl_weight_init=1e-2,
-    kl_weight_final=1.0,
-    entropy_weight=0.5,
+    stochastic=False,
     backbone=dict(
-        type="PT-BNN",
+        type="PT-v3",
         in_channels=6,
         order=("z", "z-trans"),
         stride=(2, 2, 2, 2),
@@ -39,15 +31,15 @@ model = dict(
         dec_channels=(16, 32, 64, 128),
         dec_num_head=(2, 2, 4, 4),
         dec_patch_size=(64, 64, 64, 64),
-        mlp_ratio=2,
+        mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.3,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=True,
+        enable_rpe=False,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
@@ -59,16 +51,14 @@ model = dict(
         pdnorm_affine=True,
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
-    criteria=[
-        dict(type="CrossEntropyLoss", loss_weight=1., ignore_index=-1),        
+    criteria=[    
         dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1),
-        # dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
-        dict(type="TverskyLoss", loss_weight=0.25, ignore_index=-1),
+        dict(type="TverskyLoss", loss_weight=1., ignore_index=-1),
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.01)
 scheduler = dict(
     type = "DynamicMultiStepWithWarmupLR",
 )
@@ -217,11 +207,11 @@ hooks = [
     dict(type="DynamicIterationTimer", warmup_iter=2),
     # dict(type="GPUMemoryInspector"),
     dict(type="DynamicInformationWriter"),
-    dict(type="BayesSemSegEvaluator"),
+    dict(type="SemSegEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
     # dict(type="PreciseEvaluator", test_last=False),
 ]
 
 train = dict(type="DynamicTrainer")
 
-test = dict(type='BayesSemSegTester', verbose=True)
+test = dict(type='SemSegTester', verbose=True)

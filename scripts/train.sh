@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=bnn_balanced_large_sphere
-EXP_NAME=bnn_balanced_large_sphere
+CONFIG=ptv3_balanced_ce
+EXP_NAME=ptv3_balanced_ce
 WEIGHT=None
 RESUME=false
 GPU=None

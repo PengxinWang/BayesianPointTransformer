@@ -1,22 +1,34 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 6  # bs: total bs in all gpus
+batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+dynamic_batching = True
+max_points_per_batch=150000
 num_worker = 8
-mix_prob = 0.5
+# num_worker = 2
+mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 200     # train (epoch/eval_epoch) epochs and then eval for one epoch
+epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
 eval_epoch = 20
 
 # model settings
 model = dict(
-    type="DefaultSegmentorV2",
+    type="BayesSegmentor",
     num_classes=13,
     backbone_out_channels=16,
-    stochastic=False,
+    n_components=4,
+    n_samples=4,
+    stochastic=True,
+    prior_mean=1.0, 
+    prior_std=0.10, 
+    post_mean_init=(1.0, 0.10), 
+    post_std_init=(0.10, 0.05),
+    kl_weight_init=1e-2,
+    kl_weight_final=1.0,
+    entropy_weight=0.5,
     backbone=dict(
-        type="PT-v3",
+        type="PT-BNN",
         in_channels=6,
         order=("z", "z-trans"),
         stride=(2, 2, 2, 2),
@@ -28,15 +40,15 @@ model = dict(
         dec_channels=(16, 32, 64, 128),
         dec_num_head=(2, 2, 4, 4),
         dec_patch_size=(64, 64, 64, 64),
-        mlp_ratio=2,
+        mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.3,
+        drop_path=0.0,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=True,
+        enable_rpe=False,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
@@ -49,22 +61,27 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-        # dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
+        dict(type="CrossEntropyLoss", loss_weight=1, ignore_index=-1),
+        dict(type="TverskyLoss", loss_weight=1, ignore_index=-1),
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="AdamW", lr=0.006, weight_decay=0.05)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.01)
 scheduler = dict(
-    type="OneCycleLR",
-    max_lr=[0.006, 0.0006],
-    pct_start=0.05,
-    anneal_strategy="cos",
-    div_factor=10.0,
-    final_div_factor=1000.0,
+    type = "DynamicMultiStepWithWarmupLR",
 )
-param_dicts = [dict(keyword="block", lr=0.0006)]
+# scheduler = dict(
+#     type="OneCycleLR",
+#     max_lr=[0.01, 0.001],
+#     pct_start=0.05,
+#     anneal_strategy="cos",
+#     div_factor=10.0,
+#     final_div_factor=1000.0,
+# )
+
+param_dicts = [dict(keyword="block", lr=0.001),
+               ]
 
 # dataset settings
 dataset_type = "S3DISDataset"
@@ -89,35 +106,30 @@ data = dict(
         "clutter",
     ],
     train=dict(
-        type=dataset_type,
+        type=f'Dynamic{dataset_type}',
         split=("Area_1", "Area_2", "Area_3", "Area_4", "Area_6"),
         data_root=data_root,
         transform=[
             dict(type="CenterShift", apply_z=True),
             dict(type="RandomDropout", dropout_ratio=0.2, dropout_application_ratio=0.2),
-            # dict(type="RandomRotateTargetAngle", angle=(1/2, 1, 3/2), center=[0, 0, 0], axis="z", p=0.75),
             dict(type="RandomRotate", angle=[-1, 1], axis="z", center=[0, 0, 0], p=0.5),
             dict(type="RandomRotate", angle=[-1 / 64, 1 / 64], axis="x", p=0.5),
             dict(type="RandomRotate", angle=[-1 / 64, 1 / 64], axis="y", p=0.5),
             dict(type="RandomScale", scale=[0.9, 1.1]),
-            # dict(type="RandomShift", shift=[0.2, 0.2, 0.2]),
             dict(type="RandomFlip", p=0.5),
             dict(type="RandomJitter", sigma=0.005, clip=0.02),
-            # dict(type="ElasticDistortion", distortion_params=[[0.2, 0.4], [0.8, 1.6]]),
             dict(type="ChromaticAutoContrast", p=0.2, blend_factor=None),
             dict(type="ChromaticTranslation", p=0.95, ratio=0.05),
             dict(type="ChromaticJitter", p=0.95, std=0.05),
-            # dict(type="HueSaturationTranslation", hue_max=0.2, saturation_max=0.2),
-            # dict(type="RandomColorDrop", p=0.2, color_augment=0.0),
             dict(
                 type="GridSample",
-                grid_size=0.10,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=204800, mode="random"),
+            dict(type="SphereCrop", point_max=102400, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             # dict(type="ShufflePoint"),
@@ -130,6 +142,7 @@ data = dict(
         ],
         test_mode=False,
     ),
+    # precise eval is disabled due to computation limitation
     val=dict(
         type=dataset_type,
         split="Area_5",
@@ -142,7 +155,7 @@ data = dict(
             # ),
             dict(
                 type="GridSample",
-                grid_size=0.10,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="train",
                 return_grid_coord=True,
@@ -159,8 +172,8 @@ data = dict(
                     "segment",
                     # "origin_segment",
                 ),
+                offset_keys_dict=dict(offset="coord",),
                 # offset_keys_dict=dict(offset="coord", origin_offset="origin_coord"),
-                offset_keys_dict=dict(offset="coord"),
                 feat_keys=("color", "normal"),
             ),
         ],
@@ -171,18 +184,32 @@ data = dict(
         split="Area_5",
         data_root=data_root,
         transform=[
+            dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(type="CenterShift", apply_z=True),
             dict(type="NormalizeColor"),
+            dict(
+                type="GridSample",
+                grid_size=0.025,
+                hash_type="fnv",
+                mode="train",
+                keys=("coord", "strength", "segment"),
+                return_inverse=True,
+             ),
         ],
+        # transform=[
+        #     dict(type="CenterShift", apply_z=True),
+        #     dict(type="NormalizeColor"),
+        # ],
         test_mode=True,
         test_cfg=dict(
             voxelize=dict(
                 type="GridSample",
-                grid_size=0.10,
+                grid_size=0.05,
                 hash_type="fnv",
                 mode="test",
                 keys=("coord", "color", "normal"),
                 return_grid_coord=True,
+                max_count=60,
             ),
             crop=None,
             post_transform=[
@@ -194,57 +221,20 @@ data = dict(
                     feat_keys=("color", "normal"),
                 ),
             ],
-            aug_transform=[
-                # [dict(type="RandomScale", scale=[0.9, 0.9])],
-                # [dict(type="RandomScale", scale=[0.95, 0.95])],
-                # [dict(type="RandomScale", scale=[1, 1])],
-                # [dict(type="RandomScale", scale=[1.05, 1.05])],
-                # [dict(type="RandomScale", scale=[1.1, 1.1])],
-                # [
-                #     dict(type="RandomScale", scale=[0.9, 0.9]),
-                #     dict(type="RandomFlip", p=1),
-                # ],
-                # [
-                #     dict(type="RandomScale", scale=[0.95, 0.95]),
-                #     dict(type="RandomFlip", p=1),
-                # ],
-                # [
-                #     dict(type="RandomScale", scale=[1, 1]),
-                #     dict(type="RandomFlip", p=1),
-                # ],
-                # [
-                #     dict(type="RandomScale", scale=[1.05, 1.05]),
-                #     dict(type="RandomFlip", p=1),
-                # ],
-                # [
-                #     dict(type="RandomScale", scale=[1.1, 1.1]),
-                #     dict(type="RandomFlip", p=1),
-                # ],
-            ],
-        ),),
-    vis=dict(
-        type=dataset_type,
-        split="Area_5",
-        data_root=data_root,
-        transform=[
-            dict(type="CenterShift", apply_z=True),
-            dict(type="NormalizeColor"),
-        ],
-        test_mode=True,
-        test_cfg=dict(
-            voxelize=dict(
-                type="GridSample",
-                grid_size=0.10,
-                hash_type="fnv",
-                mode="test",
-                keys=("coord", "color", "normal"),
-                return_grid_coord=True,
-            ),
-            post_transform=[],
             aug_transform=[],
-            crop=None,
         ),),
     )
 
-test = dict(type='SemSegTester', verbose=True)
-vis = dict(type='SemSegVisualizer', verbose=True)
+hooks = [
+    dict(type="CheckpointLoader"),
+    dict(type="DynamicIterationTimer", warmup_iter=2),
+    # dict(type="GPUMemoryInspector"),
+    dict(type="DynamicInformationWriter"),
+    dict(type="BayesSemSegEvaluator"),
+    dict(type="CheckpointSaver", save_freq=None),
+    # dict(type="PreciseEvaluator", test_last=False),
+]
+
+train = dict(type="DynamicTrainer")
+
+test = dict(type='BayesSemSegTester', verbose=True)

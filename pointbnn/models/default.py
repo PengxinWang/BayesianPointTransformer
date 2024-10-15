@@ -66,6 +66,7 @@ class BayesSegmentor(nn.Module):
         post_std_init=(0.40, 0.20),
     ):
         super().__init__()
+        self.n_classes = num_classes
         self.n_components = n_components
         self.n_samples = n_samples
         self.kl_weight_init = kl_weight_init
@@ -101,7 +102,11 @@ class BayesSegmentor(nn.Module):
 
         # train
         if self.training:
-            nll = self.criteria(seg_logits, point["segment"])
+            seg_logits = seg_logits.view(-1, self.n_samples, self.n_classes)
+            seg_logits = torch.mean(seg_logits, dim=1)
+            target_segments = point["segment"].view(-1, self.n_samples)
+            target_segments = target_segments[:, 0]
+            nll = self.criteria(seg_logits, target_segments)
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
             return dict(nll=nll, kl=kl)
