@@ -4,10 +4,11 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=ptv3_balanced_ce
-EXP_NAME=ptv3_balanced_ce
+CONFIG=ptv3
+EXP_NAME=ptv3
 WEIGHT=None
 RESUME=false
+FINETUNE=false
 GPU=None
 
 if [ "${GPU}" = 'None' ]
@@ -38,6 +39,15 @@ else
   cp -r scripts tools pointbnn "$CODE_DIR"
 fi
 
+if ${FINETUNE}
+then
+  CONFIG_DIR=${EXP_DIR}/config.py
+  WEIGHT=$MODEL_DIR/model_best.pth
+else
+  mkdir -p "$MODEL_DIR" "$CODE_DIR"
+  cp -r scripts tools pointbnn "$CODE_DIR"
+fi
+
 echo "Loading config in:" $CONFIG_DIR
 export PYTHONPATH=./$CODE_DIR
 echo "Running code in: $PYTHONPATH"
@@ -53,5 +63,5 @@ else
     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
     --config-file "$CONFIG_DIR" \
     --num-gpus "$GPU" \
-    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT"
+    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT" finetune="FINETUNE"
 fi

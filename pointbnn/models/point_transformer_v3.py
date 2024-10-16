@@ -22,7 +22,6 @@ class RPE(torch.nn.Module):
     """
     Relative Positional Embedding Module (Learnable)
     K: patch size
-    >>> coord: 
     """
     def __init__(self, patch_size, num_heads):
         super().__init__()

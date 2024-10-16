@@ -4,8 +4,8 @@ PYTHON=python3
 TEST_CODE=test.py
 
 DATASET=S3DIS
-CONFIG=bnn_balanced_large_sphere
-EXP_NAME=bnn_balanced_large_sphere
+CONFIG=ptv3
+EXP_NAME=ptv3
 WEIGHT=model_best
 GPU=None
 

@@ -235,7 +235,7 @@ class Trainer(TrainerBase):
             if self.cfg.seed is not None
             else None
         )
-
+        
         train_loader = torch.utils.data.DataLoader(
             train_data,
             batch_size=self.cfg.batch_size_per_gpu,

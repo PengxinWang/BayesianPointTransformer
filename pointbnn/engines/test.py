@@ -58,7 +58,6 @@ class TesterBase:
             find_unused_parameters=self.cfg.find_unused_parameters,
         )
         if os.path.isfile(self.cfg.weight):
-            self.logger.info(f"Loading weight at: {self.cfg.weight}")
             checkpoint = torch.load(self.cfg.weight)
             weight = OrderedDict()
             for key, value in checkpoint["state_dict"].items():
@@ -69,7 +68,7 @@ class TesterBase:
                     if comm.get_world_size() > 1:
                         key = "module." + key  # xxx.xxx -> module.xxx.xxx
                 weight[key] = value
-            model.load_state_dict(weight, strict=True)
+            model.load_state_dict(weight, strict=False)
             self.logger.info(
                 "=> Loaded weight '{}' (epoch {})".format(
                     self.cfg.weight, checkpoint["epoch"]

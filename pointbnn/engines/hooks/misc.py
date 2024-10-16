@@ -369,6 +369,16 @@ class CheckpointLoader(HookBase):
                 self.trainer.scheduler.load_state_dict(checkpoint["scheduler"])
                 if self.trainer.cfg.enable_amp:
                     self.trainer.scaler.load_state_dict(checkpoint["scaler"])
+
+            if self.trainer.cfg.finetune:
+                self.trainer.logger.info(
+                    f"Finetuning model_best"
+                )
+                self.trainer.best_metric_value = checkpoint["best_metric_value"]
+                # self.trainer.optimizer.load_state_dict(checkpoint["optimizer"])
+                # self.trainer.scheduler.load_state_dict(checkpoint["scheduler"])
+                if self.trainer.cfg.enable_amp:
+                    self.trainer.scaler.load_state_dict(checkpoint["scaler"])
         else:
             self.trainer.logger.info(f"No weight found at: {self.trainer.cfg.weight}")
 
