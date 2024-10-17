@@ -102,9 +102,11 @@ class BayesSegmentor(nn.Module):
 
         # train
         if self.training:
+            # target_segments = point["segment"] # try not to take mean during training
             seg_logits = seg_logits.view(-1, self.n_samples, self.n_classes)
             seg_logits = torch.mean(seg_logits, dim=1)
-            target_segments = point["segment"].view(-1, self.n_samples)
+            target_segments = point["segment"]
+            target_segments = target_segments.view(-1, self.n_samples)
             target_segments = target_segments[:, 0]
             nll = self.criteria(seg_logits, target_segments)
             kl, entropy = self.kl_and_entropy()
@@ -122,7 +124,7 @@ class BayesSegmentor(nn.Module):
         else:
             seg_logits = seg_logits.view(-1, self.n_samples, seg_logits.size(1))
             mean_seg_logits = torch.mean(seg_logits, dim=1)
-            predictive = point_wise_entropy(mean_seg_logits, type='predictive')
+            predictive = point_wise_entropy(seg_logits, type='predictive')
             aleatoric = point_wise_entropy(seg_logits, type='aleatoric')
             epistemic = predictive - aleatoric
             return dict(seg_logits=mean_seg_logits, 

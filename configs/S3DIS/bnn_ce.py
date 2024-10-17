@@ -5,7 +5,7 @@ batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
 dynamic_batching = True
 max_points_per_batch=150000
 num_worker = 8
-# num_worker = 2
+num_worker_test = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
@@ -17,15 +17,15 @@ model = dict(
     type="BayesSegmentor",
     num_classes=13,
     backbone_out_channels=16,
-    n_components=4,
-    n_samples=4,
+    n_components=2,
+    n_samples=2,
     stochastic=True,
     prior_mean=1.0, 
-    prior_std=0.10, 
-    post_mean_init=(1.0, 0.10), 
-    post_std_init=(0.10, 0.05),
-    kl_weight_init=1e-2,
-    kl_weight_final=1.0,
+    prior_std=0.05, 
+    post_mean_init=(1.0, 0.05), 
+    post_std_init=(0.05, 0.25),
+    kl_weight_init=1e-4,
+    kl_weight_final=1e-2,
     entropy_weight=0.5,
     backbone=dict(
         type="PT-BNN",
@@ -67,7 +67,7 @@ model = dict(
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.01, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
 scheduler = dict(
     type = "DynamicMultiStepWithWarmupLR",
 )
@@ -184,22 +184,9 @@ data = dict(
         split="Area_5",
         data_root=data_root,
         transform=[
-            dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(type="CenterShift", apply_z=True),
             dict(type="NormalizeColor"),
-            dict(
-                type="GridSample",
-                grid_size=0.025,
-                hash_type="fnv",
-                mode="train",
-                keys=("coord", "strength", "segment"),
-                return_inverse=True,
-             ),
         ],
-        # transform=[
-        #     dict(type="CenterShift", apply_z=True),
-        #     dict(type="NormalizeColor"),
-        # ],
         test_mode=True,
         test_cfg=dict(
             voxelize=dict(
@@ -209,7 +196,6 @@ data = dict(
                 mode="test",
                 keys=("coord", "color", "normal"),
                 return_grid_coord=True,
-                max_count=60,
             ),
             crop=None,
             post_transform=[

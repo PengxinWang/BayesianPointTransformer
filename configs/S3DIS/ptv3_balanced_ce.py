@@ -5,7 +5,7 @@ batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
 dynamic_batching = True
 max_points_per_batch=150000
 num_worker = 8
-# num_worker = 2
+num_worker_test = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
@@ -58,7 +58,7 @@ model = dict(
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.01, weight_decay=0.01)
 scheduler = dict(
     type = "DynamicMultiStepWithWarmupLR",
 )
