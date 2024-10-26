@@ -34,39 +34,45 @@ def collate_fn(batch):
         return default_collate(batch)
 
 
-def point_collate_fn(batch, mix_prob=0, dynamic_batching=False, max_points_per_batch=1e7):
-    if dynamic_batching:
-        assert len(batch[0]) == 2, "batch[0]=[data_dict, num_points]"
-        batch = sorted(batch, key=lambda x:x[1], reverse=True)
-        data_dicts, point_counts = zip(*batch)
-        current_batch = []
-        current_points = 0
-        sub_batches = []
-        for data, num_points in zip(data_dicts, point_counts):
-            if current_points + num_points > max_points_per_batch:
-                current_batch = point_collate_fn(current_batch)
-                sub_batches.append(current_batch)
-                current_batch = []
-                current_points = 0
-            current_batch.append(data)
-            current_points += num_points
-        if current_batch:
-            current_batch = point_collate_fn(current_batch)
-            sub_batches.append(current_batch)
-        return sub_batches
-    else:
+def point_collate_fn(batch, mix_prob=0):
+    assert isinstance(batch[0], Mapping)  # currently, only support input_dict, rather than input_list
+    batch = collate_fn(batch)
+    if "offset" in batch.keys():
+        # Mix3d (https://arxiv.org/pdf/2110.02210.pdf)
+        if random.random() < mix_prob:
+            batch["offset"] = torch.cat([batch["offset"][1:-1:2], batch["offset"][-1].unsqueeze(0)], dim=0)
+    return batch
+
+class CustomedDynamicDataLoader(torch.utils.data.DataLoader):
+    def __init__(self, dataset, max_points_per_batch, mix_prob=0, *args, **kwargs):
+        super().__init__(dataset, *args, **kwargs)
+        self.max_points_per_batch = max_points_per_batch
+        self.mix_prob = mix_prob
+
+    def point_collate_fn(self, batch):
         assert isinstance(batch[0], Mapping)  # currently, only support input_dict, rather than input_list
         batch = collate_fn(batch)
         if "offset" in batch.keys():
             # Mix3d (https://arxiv.org/pdf/2110.02210.pdf)
-            if random.random() < mix_prob:
+            if random.random() < self.mix_prob:
                 batch["offset"] = torch.cat([batch["offset"][1:-1:2], batch["offset"][-1].unsqueeze(0)], dim=0)
         return batch
+    
+    def __iter__(self):
+        data_iter = super().__iter__()
+        batch = []
+        batch_points = 0
+        for data_dict in data_iter:
+            point_count = data_dict['coord'].shape[0]
+            # If adding this sample exceeds the max points threshold, yield the batch
+            if batch_points + point_count > self.max_points_per_batch:
+                yield self.point_collate_fn(batch)
+                batch = []
+                batch_points = 0
 
-def gaussian_kernel(dist2: np.array, a: float = 1, c: float = 5):
-    """
-    Args:
-        a: scale factor
-        c: sigma/variance
-    """
-    return a * np.exp(-dist2 / (2 * c**2))
+            # Add sample to batch and update point count
+            batch.append(data_dict)
+            batch_points += point_count
+
+        if batch and not self.drop_last:
+            yield self.point_collate_fn(batch)

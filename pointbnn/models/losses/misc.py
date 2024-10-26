@@ -255,13 +255,13 @@ class TverskyLoss(nn.Module):
 @LOSSES.register_module("BalancedCELoss")
 class BalancedCELoss(nn.Module):
     def __init__(
-        self, gamma=1.0, reduction="mean", loss_weight=1.0, ignore_index=-1
+        self, beta=0.2, reduction="mean", loss_weight=1.0, ignore_index=-1
     ):
         super().__init__()
         assert reduction in ("mean","sum",)
         assert isinstance(loss_weight, float), "AssertionError: loss_weight should be of type float"
         assert isinstance(ignore_index, int), "ignore_index must be of type int"
-        self.gamma = gamma
+        self.beta = beta
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.ignore_index = ignore_index
@@ -280,8 +280,7 @@ class BalancedCELoss(nn.Module):
             return 0.0
         num_classes = pred.size(1)
         class_counts = torch.bincount(target, minlength=num_classes)
-        class_weights = 1./(class_counts + 1)
-        class_weights = class_weights / class_weights.sum()
+        class_weights = (1-self.beta) / (1-self.beta**(class_counts.float()+1))
         criterion = nn.CrossEntropyLoss(weight=class_weights)
         loss= criterion(pred, target)
         return self.loss_weight * loss

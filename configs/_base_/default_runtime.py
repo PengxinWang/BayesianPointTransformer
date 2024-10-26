@@ -12,6 +12,7 @@ batch_size_vis = 1
 epoch = 1  # total epoch, data loop = epoch // eval_epoch
 eval_epoch = 1  # sche total eval & checkpoint epoch
 clip_grad = None  # disable with None, enable with a float
+dynamic_batching = False
 
 sync_bn = False
 enable_amp = False

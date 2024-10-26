@@ -59,7 +59,7 @@ class SerializedAttention(PointModule):
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
         post_std_init=(0.25, 0.10),
-        
+        stochastic_modules=['atten', 'proj', 'cpe']
     ):
         super().__init__()
         assert channels % num_heads == 0
@@ -74,11 +74,19 @@ class SerializedAttention(PointModule):
         self.patch_size_max = patch_size
         self.patch_size = 0
         self.attn_drop = torch.nn.Dropout(attn_drop)
-
-        self.qkv = torch.nn.Linear(channels, channels * 3, bias=qkv_bias)
-        self.proj = StoLinear(channels, channels, n_components=n_components,
+        
+        if 'atten' in stochastic_modules:
+            self.qkv = StoLinear(channels, channels*3, bias=qkv_bias, n_components=n_components,
                               prior_mean=prior_mean, prior_std=prior_std,
                               post_mean_init=post_mean_init, post_std_init=post_std_init)
+        else:
+            self.qkv = torch.nn.Linear(channels, channels * 3, bias=qkv_bias)
+        if 'proj' in stochastic_modules:
+            self.proj = StoLinear(channels, channels, n_components=n_components,
+                                  prior_mean=prior_mean, prior_std=prior_std,
+                                  post_mean_init=post_mean_init, post_std_init=post_std_init)
+        else:
+            self.proj = torch.nn.Linear(channels, channels)
         self.proj_drop = torch.nn.Dropout(proj_drop)
         self.softmax = torch.nn.Softmax(dim=-1)
         self.rpe = RPE(patch_size, num_heads) if self.enable_rpe else None
@@ -249,7 +257,7 @@ class Block(PointModule):
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
         post_std_init=(0.25, 0.10),
-        
+        stochastic_modules = ['atten', 'proj', 'cpe']
     ):
         super().__init__()
         self.channels = channels
@@ -259,6 +267,12 @@ class Block(PointModule):
         self.prior_std = prior_std 
         self.post_mean_init = post_mean_init 
         self.post_std_init = post_std_init
+        if 'cpe' in stochastic_modules:
+            self.cpe_proj = StoLinear(channels, channels, n_components=n_components,
+                      prior_mean=prior_mean, prior_std=prior_std,
+                      post_mean_init=post_mean_init, post_std_init=post_std_init)
+        else:
+            self.cpe_proj = nn.Linear(channels, channels)
         self.cpe = PointSequential(
             spconv.SubMConv3d(
                 channels,
@@ -267,10 +281,7 @@ class Block(PointModule):
                 bias=True,
                 indice_key=cpe_indice_key,
             ),
-            nn.Linear(channels, channels),
-            # StoLinear(channels, channels, n_components=n_components,
-            #           prior_mean=prior_mean, prior_std=prior_std,
-            #           post_mean_init=post_mean_init, post_std_init=post_std_init),
+            self.cpe_proj,
             norm_layer(channels),
         )
 
@@ -292,7 +303,8 @@ class Block(PointModule):
             prior_mean=prior_mean,
             prior_std=prior_std,
             post_mean_init=post_mean_init,
-            post_std_init=post_std_init
+            post_std_init=post_std_init,
+            stochastic_modules=stochastic_modules
         )
         self.norm2 = PointSequential(norm_layer(channels))
         self.mlp = PointSequential(
@@ -563,12 +575,7 @@ class PointBNN(PointModule):
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
         post_std_init=(0.25, 0.10),
-        pdnorm_bn=False,
-        pdnorm_ln=False,
-        pdnorm_decouple=True,
-        pdnorm_adaptive=False,
-        pdnorm_affine=True,
-        pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
+        stochastic_modules = ['atten', 'proj', 'cpe']
     ):
         super().__init__()
         self.num_stages = len(enc_depths)
@@ -655,6 +662,7 @@ class PointBNN(PointModule):
                         prior_std=prior_std,
                         post_mean_init=post_mean_init,
                         post_std_init=post_std_init,
+                        stochastic_modules=stochastic_modules
                     ),
                     name=f"block{i}",
                 )
@@ -715,6 +723,7 @@ class PointBNN(PointModule):
                             prior_std=prior_std,
                             post_mean_init=post_mean_init,
                             post_std_init=post_std_init,
+                            stochastic_modules=stochastic_modules
                         ),
                         name=f"block{i}",
                     )

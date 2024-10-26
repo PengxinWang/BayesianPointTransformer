@@ -6,11 +6,11 @@ import torch.nn as nn
 import spconv.pytorch as spconv
 import torch_scatter
 from timm.models.layers import DropPath
-# try:
-#     import flash_attn
-# except ImportError:
-#     flash_attn = None
 
+try:
+    import flash_attn
+except ImportError:
+    flash_attn = None
 
 from pointbnn.models.norm.pdnorm import PDNorm
 from pointbnn.models.modules import PointModule, PointSequential
@@ -19,10 +19,6 @@ from pointbnn.models.model_utils.structure import Point
 from pointbnn.models.builder import MODELS
 
 class RPE(torch.nn.Module):
-    """
-    Relative Positional Embedding Module (Learnable)
-    K: patch size
-    """
     def __init__(self, patch_size, num_heads):
         super().__init__()
         self.patch_size = patch_size
@@ -85,11 +81,6 @@ class SerializedAttention(PointModule):
 
     @torch.no_grad()
     def get_rel_pos(self, point, order):
-        """
-        get relative position inside patch
-        >>> order: indexes of point series
-            return: tensor.shape=[num_of_patch, K, K, 3], K:patch_size
-        """
         K = self.patch_size
         rel_pos_key = f"rel_pos_{self.order_index}"
         if rel_pos_key not in point.keys():
@@ -103,7 +94,11 @@ class SerializedAttention(PointModule):
         pad_key = "pad"
         unpad_key = "unpad"
         cu_seqlens_key = "cu_seqlens_key"
-        if (pad_key not in point.keys() or unpad_key not in point.keys() or cu_seqlens_key not in point.keys()):
+        if (
+            pad_key not in point.keys()
+            or unpad_key not in point.keys()
+            or cu_seqlens_key not in point.keys()
+        ):
             offset = point.offset
             bincount = offset2bincount(offset)
             bincount_pad = (
@@ -117,7 +112,6 @@ class SerializedAttention(PointModule):
             # only pad point when num of points larger than patch_size
             mask_pad = bincount > self.patch_size
             bincount_pad = ~mask_pad * bincount + mask_pad * bincount_pad
-
             _offset = nn.functional.pad(offset, (1, 0))
             _offset_pad = nn.functional.pad(torch.cumsum(bincount_pad, dim=0), (1, 0))
             pad = torch.arange(_offset_pad[-1], device=offset.device)
@@ -598,7 +592,6 @@ class PointTransformerV3(PointModule):
                         stride=stride[s - 1],
                         norm_layer=bn_layer,
                         act_layer=act_layer,
-                        shuffle_orders=shuffle_orders,
                     ),
                     name="down",
                 )

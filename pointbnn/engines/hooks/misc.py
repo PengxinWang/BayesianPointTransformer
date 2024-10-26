@@ -6,6 +6,7 @@ import time
 import torch
 import torch.utils.data
 from collections import OrderedDict
+import matplotlib.pyplot as plt
 
 from collections.abc import Sequence
 from pointbnn.utils.timer import Timer
@@ -99,6 +100,50 @@ class DynamicIterationTimer(HookBase):
             self.trainer.storage.history("data_time").reset()
             self.trainer.storage.history("batch_time").reset()
 
+@HOOKS.register_module()
+class DynamicBatchSizeProfiler(HookBase):
+    def __init__(self):
+        self._batch_sizes = []
+    
+    def before_train(self):
+        self._batch_sizes.clear()
+    
+    def before_step(self):
+        current_batch_size = self.trainer.comm_info["batch_size"]
+        if current_batch_size > 0:
+            self._batch_sizes.append(current_batch_size)
+    
+    def after_step(self):
+        assert len(self._batch_sizes) > 0
+        avg_batch_size = sum(self._batch_sizes) / len(self._batch_sizes)
+        max_batch_size = max(self._batch_sizes)
+        min_batch_size = min(self._batch_sizes)
+        self.trainer.storage.put_scalar("avg_batch_size", avg_batch_size)
+        self.trainer.storage.put_scalar("max_batch_size", max_batch_size)
+        self.trainer.storage.put_scalar("min_batch_size", min_batch_size)
+        if "iter_info" in self.trainer.comm_info.keys():
+            info = (
+                "Batch size {batch_size} ({batch_size_avg:.1f}) ".format(
+                    batch_size = self.trainer.comm_info["batch_size"],
+                    batch_size_avg=avg_batch_size,
+                )
+            )
+            self.trainer.comm_info["iter_info"] += info
+
+    def after_train(self):
+        self.plot_batch_size_distribution()
+    
+    def plot_batch_size_distribution(self):
+        assert len(self._batch_sizes) > 0
+        plt.figure(figsize=(10, 6))
+        plt.style.use("ggplot")
+        plt.hist(self._batch_sizes, density=True, bins=100, alpha=0.7, color='blue')
+        plt.title(f'Batch Size Distribution')
+        plt.xlabel(f'Batch_size')
+        plt.ylabel(f'Frequency')
+        plt.grid(axis='y')
+        plt.savefig(os.path.join(self.trainer.save_path, 'batch_size_distribution.png'))
+        plt.close()
 
 @HOOKS.register_module()
 class InformationWriter(HookBase):
@@ -216,7 +261,7 @@ class DynamicInformationWriter(HookBase):
 
     def before_step(self):
         self.curr_iter += 1
-        info = "Train: [{epoch}/{max_epoch}][{iter}] ".format(
+        info = "Train: [{epoch}/{max_epoch}] iter:{iter} ".format(
             epoch=self.trainer.epoch + 1,
             max_epoch=self.trainer.max_epoch,
             iter=self.trainer.comm_info["iter"] + 1,
@@ -262,7 +307,6 @@ class DynamicInformationWriter(HookBase):
                     self.trainer.epoch + 1,
                 )
 
-
 @HOOKS.register_module()
 class CheckpointSaver(HookBase):
     def __init__(self, save_freq=None):
@@ -292,22 +336,40 @@ class CheckpointSaver(HookBase):
                 self.trainer.cfg.save_path, "model", "model_last.pth"
             )
             self.trainer.logger.info("Saving checkpoint to: " + filename)
-            torch.save(
-                {
-                    "epoch": self.trainer.epoch + 1,
-                    "curr_iter": self.trainer.curr_iter,
-                    "state_dict": self.trainer.model.state_dict(),
-                    "optimizer": self.trainer.optimizer.state_dict(),
-                    "scheduler": self.trainer.scheduler.state_dict(),
-                    "scaler": (
-                        self.trainer.scaler.state_dict()
-                        if self.trainer.cfg.enable_amp
-                        else None
-                    ),
-                    "best_metric_value": self.trainer.best_metric_value,
-                },
-                filename + ".tmp",
-            )
+            if self.trainer.dynamic_batch:
+                torch.save(
+                    {
+                        "epoch": self.trainer.epoch + 1,
+                        "curr_iter": self.trainer.curr_iter,
+                        "state_dict": self.trainer.model.state_dict(),
+                        "optimizer": self.trainer.optimizer.state_dict(),
+                        # "scheduler": self.trainer.scheduler.state_dict(),
+                        "scaler": (
+                            self.trainer.scaler.state_dict()
+                            if self.trainer.cfg.enable_amp
+                            else None
+                        ),
+                        "best_metric_value": self.trainer.best_metric_value,
+                    },
+                    filename + ".tmp",
+                )
+            else:
+                torch.save(
+                    {
+                        "epoch": self.trainer.epoch + 1,
+                        "state_dict": self.trainer.model.state_dict(),
+                        "optimizer": self.trainer.optimizer.state_dict(),
+                        "scheduler": self.trainer.scheduler.state_dict(),
+                        "scaler": (
+                            self.trainer.scaler.state_dict()
+                            if self.trainer.cfg.enable_amp
+                            else None
+                        ),
+                        "best_metric_value": self.trainer.best_metric_value,
+                    },
+                    filename + ".tmp",
+                )
+
             os.replace(filename + ".tmp", filename)
             if is_best:
                 shutil.copyfile(
@@ -323,7 +385,6 @@ class CheckpointSaver(HookBase):
                         f"epoch_{self.trainer.epoch + 1}.pth",
                     ),
                 )
-
 
 @HOOKS.register_module()
 class CheckpointLoader(HookBase):
@@ -363,10 +424,12 @@ class CheckpointLoader(HookBase):
                     f"Resuming train at eval epoch: {checkpoint['epoch']}"
                 )
                 self.trainer.start_epoch = checkpoint["epoch"]
-                self.trainer.curr_iter = checkpoint["curr_iter"]
+                if self.trainer.dynamic_batch:
+                    self.trainer.curr_iter = checkpoint["curr_iter"]
                 self.trainer.best_metric_value = checkpoint["best_metric_value"]
                 self.trainer.optimizer.load_state_dict(checkpoint["optimizer"])
-                self.trainer.scheduler.load_state_dict(checkpoint["scheduler"])
+                if not self.trainer.dynamic_batch:
+                    self.trainer.scheduler.load_state_dict(checkpoint["scheduler"])
                 if self.trainer.cfg.enable_amp:
                     self.trainer.scaler.load_state_dict(checkpoint["scaler"])
 
@@ -381,7 +444,6 @@ class CheckpointLoader(HookBase):
                     self.trainer.scaler.load_state_dict(checkpoint["scaler"])
         else:
             self.trainer.logger.info(f"No weight found at: {self.trainer.cfg.weight}")
-
 
 @HOOKS.register_module()
 class PreciseEvaluator(HookBase):
@@ -408,7 +470,6 @@ class PreciseEvaluator(HookBase):
             state_dict = checkpoint["state_dict"]
             tester.model.load_state_dict(state_dict, strict=True)
         tester.test()
-
 
 @HOOKS.register_module()
 class DataCacheOperator(HookBase):
@@ -443,7 +504,6 @@ class DataCacheOperator(HookBase):
                 name = data_dict["name"]
                 shared_dict(f"Pointcept-{name}", data_dict)
         synchronize()
-
 
 @HOOKS.register_module()
 class RuntimeProfiler(HookBase):
@@ -522,7 +582,6 @@ class RuntimeProfiler(HookBase):
             )
         if self.interrupt:
             sys.exit(0)
-
 
 @HOOKS.register_module()
 class RuntimeProfilerV2(HookBase):

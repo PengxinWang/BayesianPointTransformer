@@ -1,45 +1,50 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+batch_size = None
 dynamic_batching = True
-max_points_per_batch=150000
+max_points_per_batch=360000
 num_worker = 8
 num_worker_test = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 20
+epoch = 1 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 1
+seed = 25326354
 
 # model settings
 model = dict(
     type="BayesSegmentor",
     num_classes=13,
-    backbone_out_channels=16,
-    n_components=2,
-    n_samples=2,
+    backbone_out_channels=32,
+
+    n_components=4,
+    n_training_samples=1,
+    n_samples=4,
     stochastic=True,
+    stochastic_modules=['atten', 'proj', 'cpe', 'head'],
     prior_mean=1.0, 
-    prior_std=0.05, 
-    post_mean_init=(1.0, 0.05), 
-    post_std_init=(0.05, 0.25),
+    prior_std=0.1, 
+    post_mean_init=(1.0, 0.1), 
+    post_std_init=(0.1, 0.05),
     kl_weight_init=1e-4,
     kl_weight_final=1e-2,
     entropy_weight=0.5,
+
     backbone=dict(
         type="PT-BNN",
         in_channels=6,
-        order=("z", "z-trans"),
+        order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
-        enc_depths=(2, 2, 2, 4, 2),
-        enc_channels=(16, 32, 64, 128, 256),
-        enc_num_head=(2, 2, 4, 4, 8),
-        enc_patch_size=(64, 64, 64, 64, 64),
+        enc_depths=(2, 2, 2, 6, 2),
+        enc_channels=(32, 64, 128, 256, 512),
+        enc_num_head=(2, 4, 8, 16, 32),
+        enc_patch_size=(16, 16, 16, 16, 16),
         dec_depths=(2, 2, 2, 2),
-        dec_channels=(16, 32, 64, 128),
-        dec_num_head=(2, 2, 4, 4),
-        dec_patch_size=(64, 64, 64, 64),
+        dec_channels=(32, 64, 128, 256),
+        dec_num_head=(2, 4, 8, 16),
+        dec_patch_size=(16, 16, 16, 16),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
@@ -53,12 +58,13 @@ model = dict(
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
-        pdnorm_bn=False,
-        pdnorm_ln=False,
-        pdnorm_decouple=True,
-        pdnorm_adaptive=False,
-        pdnorm_affine=True,
-        pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
+        
+        stochastic_modules=['proj', 'cpe', 'head'],
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.1, 
+        post_mean_init=(1.0, 0.1), 
+        post_std_init=(0.1, 0.05),
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1, ignore_index=-1),
@@ -68,9 +74,11 @@ model = dict(
 
 # scheduler settings
 optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
-scheduler = dict(
-    type = "DynamicMultiStepWithWarmupLR",
-)
+# scheduler = dict(
+#     type = "DynamicMultiStepWithWarmupLR",
+# )
+milestone_ratios = [0.6, 0.8]
+
 # scheduler = dict(
 #     type="OneCycleLR",
 #     max_lr=[0.01, 0.001],
@@ -215,6 +223,7 @@ hooks = [
     dict(type="CheckpointLoader"),
     dict(type="DynamicIterationTimer", warmup_iter=2),
     # dict(type="GPUMemoryInspector"),
+    dict(type="DynamicBatchSizeProfiler"),
     dict(type="DynamicInformationWriter"),
     dict(type="BayesSemSegEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),

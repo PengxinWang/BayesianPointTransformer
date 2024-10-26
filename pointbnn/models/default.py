@@ -1,4 +1,5 @@
 import torch
+import math
 import torch.nn as nn
 import torch_scatter
 
@@ -54,6 +55,7 @@ class BayesSegmentor(nn.Module):
         backbone_out_channels,
         n_components=4,
         n_samples=4,
+        n_training_samples=1,
         backbone=None,
         criteria=None,
         kl_weight_init = 1e-2,
@@ -64,26 +66,33 @@ class BayesSegmentor(nn.Module):
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
         post_std_init=(0.40, 0.20),
+        stochastic_modules = ['atten', 'proj', 'cpe', 'head']
     ):
         super().__init__()
         self.n_classes = num_classes
         self.n_components = n_components
+        self.n_training_samples = n_training_samples
         self.n_samples = n_samples
         self.kl_weight_init = kl_weight_init
         self.kl_weight_final = kl_weight_final
         self.entropy_weight = entropy_weight
-        self.stochastic=stochastic
+        self.stochastic = stochastic
         self.prior_mean = prior_mean 
         self.prior_std = prior_std 
         self.post_mean_init = post_mean_init 
         self.post_std_init = post_std_init
-        self.seg_head = (StoLinear(in_features=backbone_out_channels, 
+        if 'head' in stochastic_modules:
+            self.seg_head = (StoLinear(in_features=backbone_out_channels, 
                                    out_features=num_classes, 
                                    n_components=n_components,
                                    prior_mean=prior_mean, 
                                    prior_std=prior_std, 
                                    post_mean_init=post_mean_init, 
                                    post_std_init=post_std_init))
+        else:
+            self.seg_head = (nn.Linear(in_features=backbone_out_channels,
+                                    out_features=num_classes))
+
         self.backbone = build_model(backbone)
         self.criteria = build_criteria(criteria)
         self.sto_layers = [m for m in self.modules() if isinstance(m, (StoLayer))]
@@ -95,22 +104,21 @@ class BayesSegmentor(nn.Module):
 
     def forward(self, input_dict):
         point = Point(input_dict)
-        point.get_samples(self.n_samples)
+        if self.training:
+            point.get_samples(self.n_training_samples)
+        else:
+            point.get_samples(self.n_samples)
         point = self.backbone(point)
         feat = point["feat"]
         seg_logits = self.seg_head(feat)
 
         # train
         if self.training:
-            # target_segments = point["segment"] # try not to take mean during training
-            seg_logits = seg_logits.view(-1, self.n_samples, self.n_classes)
-            seg_logits = torch.mean(seg_logits, dim=1)
-            target_segments = point["segment"]
-            target_segments = target_segments.view(-1, self.n_samples)
-            target_segments = target_segments[:, 0]
+            target_segments = point["segment"] 
             nll = self.criteria(seg_logits, target_segments)
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
+            kl = kl*self.n_samples/math.log10(target_segments.shape[0])
             return dict(nll=nll, kl=kl)
         # eval
         elif "segment" in input_dict.keys():

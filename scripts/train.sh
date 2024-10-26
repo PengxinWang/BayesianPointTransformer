@@ -4,8 +4,9 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=bnn_balanced_ce
-EXP_NAME=bnn_balanced_ce
+CONFIG=bnn_ce
+EXP_NAME=bnn_ce
+
 WEIGHT=None
 RESUME=false
 FINETUNE=false

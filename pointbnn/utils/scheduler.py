@@ -97,7 +97,6 @@ class PolyLR(lr_scheduler.LambdaLR):
             last_epoch=last_epoch,
         )
 
-
 @SCHEDULERS.register_module()
 class ExpLR(lr_scheduler.LambdaLR):
     def __init__(self, optimizer, total_steps, gamma=0.9, last_epoch=-1,):
@@ -106,7 +105,6 @@ class ExpLR(lr_scheduler.LambdaLR):
             lr_lambda=lambda s: gamma ** (s / total_steps),
             last_epoch=last_epoch,
         )
-
 
 @SCHEDULERS.register_module()
 class CosineAnnealingLR(lr_scheduler.CosineAnnealingLR):
@@ -117,7 +115,6 @@ class CosineAnnealingLR(lr_scheduler.CosineAnnealingLR):
             eta_min=eta_min,
             last_epoch=last_epoch,
         )
-
 
 @SCHEDULERS.register_module()
 class OneCycleLR(lr_scheduler.OneCycleLR):

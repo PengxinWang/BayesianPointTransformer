@@ -217,14 +217,20 @@ class DynamicDataset(Dataset):
             ignore_index=ignore_index,
             loop=loop,)
     
+    # def get_pc_number_list(self):
+    #     pc_number_list = []
+    #     for idx in range(len(self.data_list)):
+    #         data = self.get_data(idx)
+    #         pc_number_list.append(data["coord"].shape[0])
+    #     return pc_number_list
+
     def __len__(self):
         return len(self.dataset)
     
     def __getitem__(self, idx):
         data_dict = self.dataset.get_data(idx)
         data_dict = self.dataset.transform(data_dict)
-        n_points = data_dict["coord"].shape[0]
-        return data_dict, n_points
+        return data_dict
 
 @DATASETS.register_module()
 class ConcatDataset(Dataset):
