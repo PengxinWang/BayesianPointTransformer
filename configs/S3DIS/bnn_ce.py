@@ -3,14 +3,14 @@ _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
 batch_size = None
 dynamic_batching = True
-max_points_per_batch=360000
+max_points_per_batch=307200
 num_worker = 8
 num_worker_test = 2
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 1 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 1
+epoch = 400 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 20
 seed = 25326354
 
 # model settings
@@ -45,7 +45,7 @@ model = dict(
         dec_channels=(32, 64, 128, 256),
         dec_num_head=(2, 4, 8, 16),
         dec_patch_size=(16, 16, 16, 16),
-        mlp_ratio=4,
+        mlp_ratio=2,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
@@ -73,22 +73,13 @@ model = dict(
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.006, weight_decay=0.00)
 # scheduler = dict(
 #     type = "DynamicMultiStepWithWarmupLR",
 # )
 milestone_ratios = [0.6, 0.8]
 
-# scheduler = dict(
-#     type="OneCycleLR",
-#     max_lr=[0.01, 0.001],
-#     pct_start=0.05,
-#     anneal_strategy="cos",
-#     div_factor=10.0,
-#     final_div_factor=1000.0,
-# )
-
-param_dicts = [dict(keyword="block", lr=0.001),
+param_dicts = [dict(keyword="block", lr=0.0006),
                ]
 
 # dataset settings
@@ -114,7 +105,7 @@ data = dict(
         "clutter",
     ],
     train=dict(
-        type=f'Dynamic{dataset_type}',
+        type=dataset_type,
         split=("Area_1", "Area_2", "Area_3", "Area_4", "Area_6"),
         data_root=data_root,
         transform=[
