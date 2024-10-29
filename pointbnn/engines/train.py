@@ -188,6 +188,9 @@ class Trainer(TrainerBase):
                 )
             self.optimizer.step()
             self.scheduler.step()
+        # hooks during training to inspect memory usage
+        for h in self.hooks:
+            h.run_step()
         if self.cfg.empty_cache:
             torch.cuda.empty_cache()
         self.comm_info["model_output_dict"] = output_dict
