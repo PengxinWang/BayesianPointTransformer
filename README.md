@@ -2,21 +2,12 @@
 - **team member: Pengxin WANG, Shenyang Tong, Jie Yan**
 
 ## Preparation
-- **connect to gpu:** `srun --gres=gpu:2 --time=02:00:00 --cpus-per-task=8 --pty --mail-type=ALL bash`
+- **connect to gpu:** `srun --gres=gpu:2 --cpus-per-task=8 --pty --mail-type=ALL bash`
 
-## Curent Task:
-- [x] Reproduce Point Transformer v3 on ModelNet40 shape classification
-- [x] Reproduce PTv3 on S3DIS semantic segmentation
-- [x] Finish code for PT-BNN
-    - [ ] projection only; attentino only
-- [x] Visualize serialization
-    - [ ] clustering property; density imbalance
-- [ ] Visualize uncertainty quantification
-- [x] Dynamic DataLoading, try to make total points in a batch same
-- [x] Balanced CE Loss
-- [ ] Centralized RPE(cRPE)
-- [ ] Grouped vector attention
-- [ ] Tune proper grid_size and sphere crop
+## Experience records:
+S3DIS:
+exp0: ptv3(vanilla), ce, lovasz, rpe
+exp1: bnn, bce, lovasz, rpe, no_kl_reweighing
 
 ## Note:
 - Train grid size need to match val/test grid size

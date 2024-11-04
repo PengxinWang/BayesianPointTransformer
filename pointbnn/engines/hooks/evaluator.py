@@ -232,10 +232,11 @@ class BayesSemSegEvaluator(HookBase):
                 self.trainer.cfg.data.ignore_index,
             )
             # currently only support val batch_size=1, unknown bug caused by dynamic batching
-            # if comm.get_world_size() > 1:            
-            #     dist.all_reduce(intersection)
-            #     dist.all_reduce(union)
-            #     dist.all_reduce(target)
+            if not self.trainer.dynamic_batch:
+                if comm.get_world_size() > 1:            
+                    dist.all_reduce(intersection)
+                    dist.all_reduce(union)
+                    dist.all_reduce(target)
             intersection, union, target = (
                 intersection.cpu().numpy(),
                 union.cpu().numpy(),

@@ -15,7 +15,6 @@ model = dict(
     type="BayesSegmentor",
     num_classes=13,
     backbone_out_channels=32,
-
     n_components=4,
     n_training_samples=1,
     n_samples=4,
@@ -26,8 +25,8 @@ model = dict(
     post_mean_init=(1.0, 0.1), 
     post_std_init=(0.1, 0.05),
     kl_weight_init=1e-4,
-    kl_weight_final=1e-1,
-    entropy_weight=1.,
+    kl_weight_final=1e-2,
+    entropy_weight=0.5,
 
     backbone=dict(
         type="PT-BNN",
@@ -50,13 +49,13 @@ model = dict(
         drop_path=0.0,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=True,
+        enable_rpe=False,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
         
-        stochastic_modules=['atten', 'proj', 'cpe', 'head'],
+        stochastic_modules=['proj', 'cpe', 'head'],
         n_components=4,
         prior_mean=1.0, 
         prior_std=0.1, 
@@ -70,7 +69,7 @@ model = dict(
             # mode='multiclass',
             loss_weight=1.0,
             ignore_index=-1)
-            ],
+        ],
 )
 
 # scheduler settings
@@ -135,6 +134,7 @@ data = dict(
             dict(type="SphereCrop", point_max=102400, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
+            # dict(type="ShufflePoint"),
             dict(type="ToTensor"),
             dict(
                 type="Collect",
@@ -216,7 +216,7 @@ data = dict(
 hooks = [
     dict(type="CheckpointLoader"),
     dict(type="IterationTimer", warmup_iter=2),
-    # dict(type="GPUMemoryInspector"),
+    # # dict(type="GPUMemoryInspector"),
     # dict(type="DynamicBatchSizeProfiler"),
     dict(type="InformationWriter"),
     dict(type="BayesSemSegEvaluator"),

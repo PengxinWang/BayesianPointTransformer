@@ -64,7 +64,7 @@ model = dict(
         post_std_init=(0.1, 0.05),
     ),
     criteria=[
-        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1, beta=0.3),
+        dict(type="CrossEntropyLoss", loss_weight=1, ignore_index=-1),
         dict(
             type='LovaszLoss',
             # mode='multiclass',

@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=bnn_bce_lovasz_rpe
-EXP_NAME=bnn_bce_lovasz_rpe
+CONFIG=exp1
+EXP_NAME=exp1
 
 WEIGHT=None
 RESUME=false

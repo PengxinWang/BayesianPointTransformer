@@ -1,5 +1,4 @@
 import torch
-import math
 import torch.nn as nn
 import torch_scatter
 
@@ -118,7 +117,8 @@ class BayesSegmentor(nn.Module):
             nll = self.criteria(seg_logits, target_segments)
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
-            kl = kl*self.n_samples/math.sqrt(target_segments.shape[0])
+            kl = kl * self.n_training_samples
+            # kl = kl*self.n_training_samples/target_segments.shape[0]
             return dict(nll=nll, kl=kl)
         # eval
         elif "segment" in input_dict.keys():
