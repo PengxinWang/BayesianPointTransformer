@@ -34,6 +34,11 @@ exp1: bnn, bce, lovasz, rpe, no_kl_reweighing
     - [Paper](https://ieeexplore.ieee.org/document/7780539)
 - data
 
+### ShapeNet
+- download
+
+  链接：https://pan.baidu.com/s/1wRA7zPytCCBx9b_jDjiVEg?pwd=wl08 
+  提取码：wl08 
 
 
 ### Data Augmentation
