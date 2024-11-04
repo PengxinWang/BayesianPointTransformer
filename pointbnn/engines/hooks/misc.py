@@ -49,8 +49,8 @@ class IterationTimer(HookBase):
         remain_time = "{:02d}:{:02d}:{:02d}".format(int(t_h), int(t_m), int(t_s))
         if "iter_info" in self.trainer.comm_info.keys():
             info = (
-                "Data {data_time_val:.3f} ({data_time_avg:.3f}) "
-                "Batch {batch_time_val:.3f} ({batch_time_avg:.3f}) "
+                "Data Time: {data_time_val:.3f} ({data_time_avg:.3f}) "
+                "Batch Time: {batch_time_val:.3f} ({batch_time_avg:.3f}) "
                 "Remain {remain_time} ".format(
                     data_time_val=self.trainer.storage.history("data_time").val,
                     data_time_avg=self.trainer.storage.history("data_time").avg,
@@ -99,6 +99,54 @@ class DynamicIterationTimer(HookBase):
         if self.trainer.comm_info["iter"] <= self._warmup_iter:
             self.trainer.storage.history("data_time").reset()
             self.trainer.storage.history("batch_time").reset()
+
+@HOOKS.register_module()
+class GPUMemoryInspector(HookBase):
+    def __init__(self):
+        self._allocated_memory_ratio = []
+        self._reserved_memory_ratio = []
+        self.num_devices = torch.cuda.device_count()  
+        self.max_memory = [torch.cuda.get_device_properties(i).total_memory / (1024 ** 3) for i in range(self.num_devices)]
+
+    def before_train(self):
+        self._allocated_memory_ratio = [[] for _ in range(self.num_devices)]  
+        self._reserved_memory_ratio = [[] for _ in range(self.num_devices)] 
+    
+    def before_step(self):
+        pass
+
+    def run_step(self):
+        for device in range(self.num_devices):
+            torch.cuda.set_device(device)
+            allocated_memory = torch.cuda.memory_allocated() / (1024 ** 3) 
+            reserved_memory = torch.cuda.memory_reserved() / (1024 ** 3) 
+            allocated_memory_ratio = allocated_memory / self.max_memory[device] if self.max_memory[device] > 0 else 0
+            reserved_memory_ratio = reserved_memory / self.max_memory[device] if self.max_memory[device] > 0 else 0
+            self._allocated_memory_ratio[device].append(allocated_memory_ratio)
+            self._reserved_memory_ratio[device].append(reserved_memory_ratio)
+
+    def after_epoch(self):
+        self.plot_gpu_memory_usage()
+
+    def plot_gpu_memory_usage(self):
+        plt.figure(figsize=(10, 5))
+        iterations = range(1, len(self._allocated_memory_ratio[0]) + 1)
+        for device in range(self.num_devices):
+            plt.plot(iterations, self._allocated_memory_ratio[device], label=f'Device {device} Allocated Memory Ratio')
+            plt.plot(iterations, self._reserved_memory_ratio[device], label=f'Device {device} Reserved Memory Ratio', linestyle='--')
+        if self.trainer.dynamic_batch:
+            plt.title('GPU Memory Usage with Dynamic Batch Size')
+        else:
+            plt.title('GPU Memory Usage with Static Batch Size')
+        plt.xlabel('Iterations')
+        plt.ylabel('Memory Usage Ratio')
+        plt.legend()
+        plt.grid()
+        if self.trainer.dynamic_batch:
+            plt.savefig(os.path.join(self.trainer.save_path, 'GPU_Usage_Dynamic.png'))
+        else:
+            plt.savefig(os.path.join(self.trainer.save_path, 'GPU_Usage_Static.png'))
+        plt.close()
 
 @HOOKS.register_module()
 class DynamicBatchSizeProfiler(HookBase):
@@ -203,50 +251,6 @@ class InformationWriter(HookBase):
                     self.trainer.storage.history(key).avg,
                     self.trainer.epoch + 1,
                 )
-
-@HOOKS.register_module()
-class GPUMemoryInspector(HookBase):
-    def __init__(self):
-        pass
-    
-    def before_train(self):
-        self.trainer.comm_info["gpu_memory_info"] = ""
-    
-    def before_step(self):
-        info = "Train: [{epoch}/{max_epoch}][{iter}]".format(
-            epoch=self.trainer.epoch+1,
-            max_epoch=self.trainer.max_epoch,
-            iter = self.trainer.comm_info["iter"] + 1
-        )
-        self.trainer.comm_info["gpu_memory_info"] += info
-    
-    def run_step(self):
-        allocated_memory = torch.cuda.memory_allocated()/(1024**3)
-        reserved_memory = torch.cuda.memory_reserved()/(1024**3)
-        self.trainer.storage.put_scalar("allocated_memory_GB", allocated_memory)
-        self.trainer.storage.put_scalar("reserved_memory_GB", reserved_memory)
-        self.trainer.comm_info["gpu_memory_info"] += 'Allocated: {alloc:.3f}GB, Reserved: {res:.3f}GB'.format(
-            alloc=allocated_memory,
-            res=reserved_memory,            
-        )
-        self.trainer.logger.info(self.trainer.comm_info["gpu_memory_info"])
-        self.trainer.comm_info["gpu_memory_info"] = ''
-        if self.trainer.writer is not None:
-            self.trainer.writer.add_scalar(
-                "gpu_memory/allocated_GB", allocated_memory, self.trainer.comm_info["iter"],
-            )
-            self.trainer.writer.add_scalar(
-                "gpu_memory/reserved_GB", reserved_memory, self.trainer.comm_info["iter"]
-            )
-    
-    def after_epoch(self):
-        allocated_avg = self.trainer.storage.history("allocated_memory_GB").avg
-        reserved_avg = self.trainer.storage.history("reserved_memory_GB").avg
-        epoch_info = "GPU Memory usage: Allocated Avg: {alloc_avg:.3f}GB, Reserved Avg: {res_avg:.3f}GB".format(
-            alloc_avg=allocated_avg,
-            res_avg=reserved_avg
-        )
-        self.trainer.logger.info(epoch_info)
 
 @HOOKS.register_module()
 class DynamicInformationWriter(HookBase):

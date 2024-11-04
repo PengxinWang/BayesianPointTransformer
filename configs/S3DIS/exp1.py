@@ -1,44 +1,46 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 48  # bs: total bs(num_pointclouds_per_epoch) in all gpu
-dynamic_batching = True
-max_points_per_batch=150000
-num_worker = 8
+batch_size = 6  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+num_worker = 6
 num_worker_test = 4
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
-epoch = 200 # train (epoch/eval_epoch) epochs and then eval for one epoch
-eval_epoch = 20
+epoch = 3000 # train (epoch/eval_epoch) epochs and then eval for one epoch
+eval_epoch = 100
 
 # model settings
 model = dict(
     type="BayesSegmentor",
     num_classes=13,
-    backbone_out_channels=16,
+    backbone_out_channels=32,
+
     n_components=4,
+    n_training_samples=1,
     n_samples=4,
     stochastic=True,
+    stochastic_modules=['atten', 'proj', 'cpe', 'head'],
     prior_mean=1.0, 
-    prior_std=0.10, 
-    post_mean_init=(1.0, 0.10), 
-    post_std_init=(0.10, 0.05),
+    prior_std=0.1, 
+    post_mean_init=(1.0, 0.1), 
+    post_std_init=(0.1, 0.05),
     kl_weight_init=1e-4,
     kl_weight_final=1e-1,
-    entropy_weight=0.5,
+    entropy_weight=1.,
+
     backbone=dict(
         type="PT-BNN",
         in_channels=6,
-        order=("z", "z-trans"),
+        order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 6, 2),
-        enc_channels=(16, 32, 64, 128, 256),
-        enc_num_head=(2, 2, 4, 4, 8),
+        enc_channels=(32, 64, 128, 256, 512),
+        enc_num_head=(2, 4, 8, 16, 32),
         enc_patch_size=(16, 16, 16, 16, 16),
         dec_depths=(2, 2, 2, 2),
-        dec_channels=(16, 32, 64, 128),
-        dec_num_head=(2, 2, 4, 4),
+        dec_channels=(32, 64, 128, 256),
+        dec_num_head=(2, 4, 8, 16),
         dec_patch_size=(16, 16, 16, 16),
         mlp_ratio=4,
         qkv_bias=True,
@@ -53,26 +55,35 @@ model = dict(
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
-        pdnorm_bn=False,
-        pdnorm_ln=False,
-        pdnorm_decouple=True,
-        pdnorm_adaptive=False,
-        pdnorm_affine=True,
-        pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
+        
+        stochastic_modules=['atten', 'proj', 'cpe', 'head'],
+        n_components=4,
+        prior_mean=1.0, 
+        prior_std=0.1, 
+        post_mean_init=(1.0, 0.1), 
+        post_std_init=(0.1, 0.05),
     ),
     criteria=[
-        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1, beta=0.4),
-        dict(type="TverskyLoss", loss_weight=1., ignore_index=-1,),
-    ],
+        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1, beta=0.3),
+        dict(
+            type='LovaszLoss',
+            # mode='multiclass',
+            loss_weight=1.0,
+            ignore_index=-1)
+            ],
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.01, weight_decay=0.00)
-# scheduler = dict(
-#     type = "DynamicMultiStepWithWarmupLR",
-# )
+optimizer = dict(type="Adam", lr=0.006, weight_decay=0.00)
+scheduler = dict(
+    type='OneCycleLR',
+    max_lr=[0.006, 0.0006],
+    pct_start=0.05,
+    anneal_strategy='cos',
+    div_factor=10.0,
+    final_div_factor=1000.0)
 
-param_dicts = [dict(keyword="block", lr=0.001),
+param_dicts = [dict(keyword="block", lr=0.0006),
                ]
 
 # dataset settings
@@ -98,7 +109,7 @@ data = dict(
         "clutter",
     ],
     train=dict(
-        type=f'Dynamic{dataset_type}',
+        type=dataset_type,
         split=("Area_1", "Area_2", "Area_3", "Area_4", "Area_6"),
         data_root=data_root,
         transform=[
@@ -121,10 +132,9 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=102400, mode="random"),
+            dict(type="SphereCrop", point_max=int(0.7*102400), mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
-            # dict(type="ShufflePoint"),
             dict(type="ToTensor"),
             dict(
                 type="Collect",
@@ -205,15 +215,15 @@ data = dict(
 
 hooks = [
     dict(type="CheckpointLoader"),
-    dict(type="DynamicIterationTimer", warmup_iter=2),
+    dict(type="IterationTimer", warmup_iter=2),
     # dict(type="GPUMemoryInspector"),
-    dict(type="DynamicBatchSizeProfiler"),
-    dict(type="DynamicInformationWriter"),
+    # dict(type="DynamicBatchSizeProfiler"),
+    dict(type="InformationWriter"),
     dict(type="BayesSemSegEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
     # dict(type="PreciseEvaluator", test_last=False),
 ]
 
-train = dict(type="DynamicTrainer")
+train = dict(type="DefaultTrainer")
 
 test = dict(type='BayesSemSegTester', verbose=True)

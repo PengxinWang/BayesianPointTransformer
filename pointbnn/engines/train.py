@@ -9,7 +9,8 @@ from collections.abc import Iterator
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
-from pointbnn.datasets import build_dataset, point_collate_fn, collate_fn, CustomedDynamicDataLoader
+from pointbnn.datasets import build_dataset, point_collate_fn, collate_fn
+from pointbnn.datasets import CustomedDynamicDataLoader, CustomedDynamicDistributedSampler
 from pointbnn.models import build_model
 from pointbnn.utils.logger import get_root_logger
 from pointbnn.utils.optimizer import build_optimizer
@@ -187,6 +188,9 @@ class Trainer(TrainerBase):
                 )
             self.optimizer.step()
             self.scheduler.step()
+        # hooks during training to inspect memory usage
+        for h in self.hooks:
+            h.run_step()
         if self.cfg.empty_cache:
             torch.cuda.empty_cache()
         self.comm_info["model_output_dict"] = output_dict
@@ -326,7 +330,6 @@ class DynamicTrainer(TrainerBase):
         self.register_hooks(self.cfg.hooks)
 
     def train(self):
-        initial_lr = self.cfg.optimizer.lr
         with EventStorage() as self.storage, ExceptionWriter():
             # => before train
             self.before_train()
@@ -342,11 +345,14 @@ class DynamicTrainer(TrainerBase):
                     self.optimizer.param_groups[0]['lr'] *= 0.1
                 elif self.epoch == self.milestones[1]:
                     self.optimizer.param_groups[0]['lr'] *= 0.1
-                # => run_epoch
                 for (
                     self.comm_info["iter"],
                     self.comm_info["input_dict"],
                 ) in self.data_iterator:
+                    end_epoch_flag = torch.tensor(int(self.train_loader.end_epoch)).cuda()
+                    dist.all_reduce(end_epoch_flag, op=dist.ReduceOp.SUM)
+                    if end_epoch_flag.item()>0:
+                        break
                     self.comm_info["batch_size"] = len(self.comm_info["input_dict"]["offset"])
                     self.before_step()
                     self.run_step()
@@ -373,7 +379,7 @@ class DynamicTrainer(TrainerBase):
         local_batch_size = len(input_dict["offset"])
         if dist.is_available() and dist.is_initialized():
             total_batch_size = torch.tensor(local_batch_size).cuda()
-        dist.all_reduce(total_batch_size, op=dist.reduce_op.SUM)
+        dist.all_reduce(total_batch_size, op=dist.ReduceOp.SUM)
         batch_weight = local_batch_size / total_batch_size.item()
         loss = loss * batch_weight
         self.optimizer.zero_grad()
@@ -440,10 +446,16 @@ class DynamicTrainer(TrainerBase):
 
     def build_train_loader(self):
         train_data = build_dataset(self.cfg.data.train)
+        # train_data.n_points_statistics(visualize=True, save_path=self.cfg.save_path, after_transform=False)  
+        # train_data.n_points_statistics(visualize=True, save_path=self.cfg.save_path, after_transform=True)
         self.data_size_ = len(train_data)
+        points_per_sample = train_data.get_points_per_sample() * train_data.loop
+        print(f'check points per sample: {points_per_sample}')
 
         if comm.get_world_size() > 1:
-            train_sampler = DistributedSampler(train_data)
+            train_sampler = CustomedDynamicDistributedSampler(train_data, 
+                                                              points_per_sample=points_per_sample,
+                                                              )
         else:
             train_sampler = None
 
@@ -457,7 +469,6 @@ class DynamicTrainer(TrainerBase):
             if self.cfg.seed is not None
             else None
         )
-
         train_loader = CustomedDynamicDataLoader(
             train_data,
             batch_size=None,  # we are dealing with batch size dynamically

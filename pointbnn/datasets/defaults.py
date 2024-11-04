@@ -155,10 +155,13 @@ class DefaultDataset(Dataset):
         result_dict["fragment_list"] = fragment_list                        
         return result_dict
 
-    def n_points_statistics(self, visualize=False, save_path=None):
+    def n_points_statistics(self, visualize=False, after_transform=False, save_path=None):
         count_n_points = []
         for idx in range(len(self.data_list)):
-            data = self.get_data(idx)
+            if after_transform:
+                data = self.prepare_train_data(idx)
+            else:
+                data = self.get_data(idx)
             count_n_points.append(data["coord"].shape[0])
         count_n_points = np.array(count_n_points)
         max_index = np.argmax(count_n_points)
@@ -178,13 +181,23 @@ class DefaultDataset(Dataset):
             plt.axvline(mean, color='b', linestyle='--', label=f'mean:{mean}\nstd:{std}')
             plt.xlabel(f'Num of Points')
             plt.ylabel(f'Frequency')
-            plt.title(f'Basic Statistics on dataset')   
+            if after_transform:
+                plt.title(f'Num of Points per Sample (After Transformation)')
+            else:
+                plt.title(f'Num of Points per Sample (Before Transformation)')
             plt.legend()     
-            plt.savefig(os.path.join(save_path, f'dataset.png'))
+            if after_transform:
+                plt.savefig(os.path.join(save_path, f'dataset_transformed.png'))
+            else:
+                plt.savefig(os.path.join(save_path, f'dataset.png'))
 
-    def vis_pcd(self, save_path):
-        raise NotImplementedError
-
+    def get_points_per_sample(self):
+        points_per_sample = []
+        for idx in range(len(self.data_list)):
+            data = self.prepare_train_data(idx)
+            points_per_sample.append(data["coord"].shape[0])
+        return points_per_sample
+        
     def __getitem__(self, idx):
         if self.test_mode:
             return self.prepare_test_data(idx)
@@ -193,44 +206,6 @@ class DefaultDataset(Dataset):
 
     def __len__(self):
         return len(self.data_list) * self.loop
-
-@DATASETS.register_module()
-class DynamicDataset(Dataset):
-    def __init__(
-        self, 
-        split="train",
-        data_root="data/dataset",
-        transform=None,
-        test_mode=False,
-        test_cfg=None,
-        cache=False,
-        ignore_index=-1,
-        loop=1,):
-        super().__init__()
-        self.dataset = DefaultDataset(
-            split=split,
-            data_root=data_root,
-            transform=transform,
-            test_mode=test_mode,
-            test_cfg=test_cfg,
-            cache=cache,
-            ignore_index=ignore_index,
-            loop=loop,)
-    
-    # def get_pc_number_list(self):
-    #     pc_number_list = []
-    #     for idx in range(len(self.data_list)):
-    #         data = self.get_data(idx)
-    #         pc_number_list.append(data["coord"].shape[0])
-    #     return pc_number_list
-
-    def __len__(self):
-        return len(self.dataset)
-    
-    def __getitem__(self, idx):
-        data_dict = self.dataset.get_data(idx)
-        data_dict = self.dataset.transform(data_dict)
-        return data_dict
 
 @DATASETS.register_module()
 class ConcatDataset(Dataset):
