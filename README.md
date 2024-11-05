@@ -7,47 +7,25 @@
 ## Experience records:
 S3DIS:
 exp0: ptv3(vanilla), ce, lovasz, rpe
-exp1: bnn, bce, lovasz, rpe, no_kl_reweighing
+exp1: bnn, bce, lovasz, rpe, kl_reweighing, sto_type = ['head']
+exp2: bnn, bce, lovasz, rpe, kl_reweighting
+exp3: ptv3, bce, lovasz, rpe
+exp4: bnn, bce, lovasz, rpe, sto_type=['atten','cpe','proj']
 
-## Note:
-- Train grid size need to match val/test grid size
+ModelNet40:
+exp0: ptv3(vanilla), ce, rpe
 
 ## Data
-
-### General Setting
-- Point Module: A Dict(addict.Dict) storing necessary information of a batch of point cloud data 
-    - offset: index to separate point clouds
-
-### Preprocessing
-
-### ModelNet40
-- how many point clouds are there in the dataset?
-    - trainset: 9843
-    - val/testset: 2468
-- how many points are sampled in each point cloud?
-    - raw: 10000 points
-    - processed: 
-
-### S3DIS
-- download
-    - fill out the [Google Form](https://docs.google.com/forms/d/e/1FAIpQLScDimvNMCGhy_rmBA2gHfDu3naktRm6A8BPwAWWDv-Uhm6Shw/viewform?c=0&w=1)
-    - [Paper](https://ieeexplore.ieee.org/document/7780539)
-- data
 
 ### ShapeNet
 - download
 
-  链接：https://pan.baidu.com/s/1wRA7zPytCCBx9b_jDjiVEg?pwd=wl08 
-  提取码：wl08 
-
+  link: https://pan.baidu.com/s/1wRA7zPytCCBx9b_jDjiVEg?pwd=wl08 
+  password: wl08 
 
 ### Data Augmentation
-- what is point cloud jittering?
-- what does anisotropic mean in random_scale()?
-- mixed3D
 
 ### Post Processing
-- Random_scale for 10 times for ensembling(TTA)
 
 ## Model Structure
 - **Model size**
@@ -66,18 +44,7 @@ exp1: bnn, bce, lovasz, rpe, no_kl_reweighing
     - [Official Document](https://github.com/traveller59/spconv/blob/master/docs/USAGE.md)
     - input_feat.shape = output_feat.shape
 
-### Attention Mechanism
-
-### Layer Normalization
-- Layer Norm is more suitable for data with variable length
-
 ### Loss Function
-
-### Optimization
-- Optimizer: SGD, Adam, AdamW
-    - AdamW
-- Scaler: for calibrating precision between different GPUs
-- train_epochs: 300(default), 6(pilot)
 
 ## Evaluation
 

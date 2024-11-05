@@ -1,32 +1,31 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 20 # total batch_size in all gpus
-num_worker = 8  # total num_workers in all gpus
-batch_size_val = 30
-batch_size_test = 30
-empty_cache = True 
-enable_amp = True # enable automatic mixed precision
-epoch = 15  # total epoch, data loop = epoch // eval_epoch
-eval_epoch = 15  # sche total eval & checkpoint epoch
+batch_size = 2 # bs: total bs in all gpus
+num_worker = 4  
+batch_size_val = 2
+empty_cache = True
+enable_amp = True
+epoch = 100
+eval_epoch = 10
 
 # model settings
 model = dict(
     type="DefaultClassifier",
     num_classes=40,
-    backbone_embed_dim=256,
+    backbone_embed_dim=512,
     backbone=dict(
         type="PT-v3",
         in_channels=6,
-        order=("z", "z-trans"),
+        order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 6, 2),
-        enc_channels=(16, 32, 64, 128, 256),
-        enc_num_head=(2, 4, 4, 8, 16),
-        enc_patch_size=(512, 512, 512, 512, 512),
+        enc_channels=(32, 64, 128, 256, 512),
+        enc_num_head=(2, 4, 8, 16, 32),
+        enc_patch_size=(1024, 1024, 1024, 1024, 1024),
         dec_depths=(2, 2, 2, 2),
-        dec_channels=(16, 32, 64, 128),
-        dec_num_head=(2, 4, 8, 16),
-        dec_patch_size=(512, 512, 512, 512),
+        dec_channels=(64, 64, 128, 256),
+        dec_num_head=(4, 4, 8, 16),
+        dec_patch_size=(1024, 1024, 1024, 1024),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
@@ -186,16 +185,9 @@ data = dict(
         class_names=class_names,
         transform=[
             dict(type="NormalizeCoord"),
-            # dict(type="ToTensor"),
-            # dict(
-            #     type="Collect",
-            #     keys=("coord", "category"),
-            #     feat_keys=["coord", "normal"],
-            # ),
         ],
         test_mode=True,
         test_cfg=dict(
-            voting=False,
             post_transform=[
                 dict(
                     type="GridSample",
@@ -208,21 +200,21 @@ data = dict(
                 dict(type="ToTensor"),
                 dict(
                     type="Collect",
-                    keys=("coord", "grid_coord", "category"),
+                    keys=("coord", "grid_coord"),
                     feat_keys=["coord", "normal"],
                 ),
             ],
             aug_transform=[
-                # [dict(type="RandomScale", scale=[1, 1], anisotropic=True)],  # 1
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 2
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 3
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 4
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 6
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 7
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 8
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 9
+                [dict(type="RandomScale", scale=[1, 1], anisotropic=True)],  # 1
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 2
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 3
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 4
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 6
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 7
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 8
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 9
             ],
         ),
     ),
@@ -239,5 +231,4 @@ hooks = [
 ]
 
 # tester
-# test = dict(type="ClsVotingTester", num_repeat=2)
 test = dict(type="ClsTester", verbose=False)

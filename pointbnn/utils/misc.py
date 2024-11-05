@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from importlib import import_module
+import matplotlib.pyplot as plt
 
 
 class AverageMeter(object):
@@ -82,6 +83,55 @@ def point_wise_entropy(logits, type='predictive'):
         entropy = - torch.sum(torch.mul(prob, torch.log(prob + 1e-10)), dim=-1)
         entropy = torch.mean(entropy, dim=0)
     return entropy
+
+class ECE(torch.nn.Module):
+    """
+    expected calibration error, measure how reliable confidence score is.
+    """
+    def __init__(self, n_bins=15):
+        super().__init__()
+        bins = torch.linspace(0, 1, n_bins+1)
+        self.bin_lowers = bins[:-1]
+        self.bin_uppers = bins[1:]
+    
+    def forward(self, preds, labels, plot=False):
+        # preds.shape = [len(testset), n_classes], labels.shape[len(testset)], 
+        # note: preds need to be normalized to [0,1]
+        confidences, preds = torch.max(preds, dim=1)
+        correct_preds = preds.eq(labels)
+
+        ece = 0.
+        for bin_lower, bin_upper in zip(self.bin_lowers, self.bin_uppers):
+            sample_in_bin = confidences.gt(bin_lower.item())*confidences.le(bin_upper.item())
+            prop_in_bin = sample_in_bin.float().mean()
+            if  prop_in_bin.item() > 0:
+                acc_in_bin = correct_preds[sample_in_bin].float().mean()
+                avg_confidence_in_bin = confidences[sample_in_bin].mean()
+                diff_in_bin = torch.abs(avg_confidence_in_bin - acc_in_bin) * prop_in_bin
+                ece += diff_in_bin.item()
+        return ece
+    
+    def plot_calibration(self, acc_per_bin, conf_per_bin):
+        # bin_centers = (self.bin_lowers + self.bin_uppers) / 2
+        # plt.figure(figsize=(10, 6))
+        
+        # bar_width = 0.4
+        # # Plot the accuracy
+        # plt.bar(bin_centers.numpy() - bar_width/2, acc_per_bin, width=bar_width, label='Accuracy', alpha=0.6, color='blue')
+        # # Plot the confidence
+        # plt.bar(bin_centers.numpy() + bar_width/2, conf_per_bin, width=bar_width, label='Mean Confidence', alpha=0.6, color='red')
+
+        # # Set labels and title
+        # plt.xlabel("Confidence")
+        # # plt.ylabel("Accuracy")
+        # plt.title("Calibration Plot (Accuracy vs. Confidence)")
+        # plt.legend()
+        # plt.text(0.95, 0.05, f"ECE: {ece_score:.4f}", 
+        #      verticalalignment='bottom', horizontalalignment='right', 
+        #      transform=plt.gca().transAxes, 
+        #      color='black', fontsize=12, bbox=dict(facecolor='white', alpha=0.6))
+        # plt.savefig(save_path)
+        # plt.close()
 
 def make_dirs(dir_name):
     if not os.path.exists(dir_name):

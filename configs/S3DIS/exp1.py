@@ -1,8 +1,8 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 6  # bs: total bs(num_pointclouds_per_epoch) in all gpu
-num_worker = 6
+batch_size = 4  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+num_worker = 4
 num_worker_test = 4
 mix_prob = 0.8
 empty_cache = True
@@ -20,13 +20,13 @@ model = dict(
     n_training_samples=1,
     n_samples=4,
     stochastic=True,
-    stochastic_modules=['atten', 'proj', 'cpe', 'head'],
+    stochastic_modules=['atten','proj'],
     prior_mean=1.0, 
     prior_std=0.1, 
     post_mean_init=(1.0, 0.1), 
     post_std_init=(0.1, 0.05),
     kl_weight_init=1e-4,
-    kl_weight_final=1e-1,
+    kl_weight_final=1e-2,
     entropy_weight=1.,
 
     backbone=dict(
@@ -55,22 +55,21 @@ model = dict(
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
-        
-        stochastic_modules=['atten', 'proj', 'cpe', 'head'],
+        stochastic_modules=['atten','proj'],
         n_components=4,
-        prior_mean=1.0, 
+        prior_mean=1.0,
         prior_std=0.1, 
         post_mean_init=(1.0, 0.1), 
         post_std_init=(0.1, 0.05),
     ),
     criteria=[
-        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1, beta=0.3),
-        dict(
-            type='LovaszLoss',
-            # mode='multiclass',
-            loss_weight=1.0,
-            ignore_index=-1)
-            ],
+        dict(type="CrossEntropyLoss", loss_weight=1., ignore_index=-1),
+        # dict(
+        #     type='LovaszLoss',
+        #     # mode='multiclass',
+        #     loss_weight=1.0,
+        #     ignore_index=-1)
+    ],
 )
 
 # scheduler settings

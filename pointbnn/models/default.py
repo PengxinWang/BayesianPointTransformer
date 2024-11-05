@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch_scatter
+import math
 
 from pointbnn.models.losses import build_criteria
 from pointbnn.models.model_utils.structure import Point
@@ -117,7 +118,8 @@ class BayesSegmentor(nn.Module):
             nll = self.criteria(seg_logits, target_segments)
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
-            kl = kl * self.n_training_samples
+            # kl = kl * self.n_training_samples
+            kl = kl*self.n_training_samples/math.sqrt(target_segments.shape[0]+1)
             # kl = kl*self.n_training_samples/target_segments.shape[0]
             return dict(nll=nll, kl=kl)
         # eval
@@ -184,3 +186,72 @@ class DefaultClassifier(nn.Module):
             return dict(loss=loss, cls_logits=cls_logits)
         else:
             return dict(cls_logits=cls_logits)
+
+@MODELS.register_module()
+class BayesClassifier(nn.Module):
+    def __init__(
+        self,
+        backbone=None,
+        criteria=None,
+        num_classes=40,
+        backbone_embed_dim=256,
+    ):
+        super().__init__()
+        self.backbone = build_model(backbone)
+        self.criteria = build_criteria(criteria)
+        self.num_classes = num_classes
+        self.backbone_embed_dim = backbone_embed_dim
+        self.cls_head = nn.Sequential(
+            nn.Linear(backbone_embed_dim, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(128, num_classes),
+        )
+
+    def kl_and_entropy(self):
+        kl = torch.mean(torch.stack([m._kl() for m in self.sto_layers]))
+        entropy = torch.mean(torch.stack([m._entropy() for m in self.sto_layers]))
+        return (kl, entropy)
+
+    def forward(self, input_dict):
+        point = Point(input_dict)
+        if self.training:
+            point.get_samples(self.n_training_samples)
+        else:
+            point.get_samples(self.n_samples)
+        point = self.backbone(point)
+        point.feat = torch_scatter.segment_csr(
+                src=point.feat,
+                indptr=nn.functional.pad(point.offset, (1, 0)),
+                reduce="mean",
+                )
+        feat = point.feat
+        cls_logits = self.cls_head(feat)
+        if self.training:
+            target_cats = input_dict["category"]
+            nll = self.criteria(cls_logits, target_cats)
+            kl, entropy = self.kl_and_entropy()
+            kl = kl - self.entropy_weight * entropy
+            # kl = kl * self.n_training_samples
+            kl = kl*self.n_training_samples/math.sqrt(target_cats.shape[0]+1)
+            # kl = kl*self.n_training_samples/target_segments.shape[0]
+            return dict(nll=nll, kl=kl)
+        elif "category" in input_dict.keys():
+            cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
+            mean_cls_logits = torch.mean(cls_logits, dim=1)
+            nll = self.criteria(mean_cls_logits, input_dict["segment"])
+            kl, entropy = self.kl_and_entropy()
+            kl = kl - self.entropy_weight * entropy
+            return dict(nll=nll, kl=kl, seg_logits=mean_cls_logits)
+        else:
+            cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
+            mean_seg_logits = torch.mean(cls_logits, dim=1)
+            # predictive = point_wise_entropy(seg_logits, type='predictive')
+            # aleatoric = point_wise_entropy(seg_logits, type='aleatoric')
+            # epistemic = predictive - aleatoric
+            return dict(cls_logits=mean_cls_logits)

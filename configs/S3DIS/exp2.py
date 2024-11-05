@@ -1,8 +1,8 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 8  # bs: total bs(num_pointclouds_per_epoch) in all gpu
-num_worker = 8
+batch_size = 6  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+num_worker = 6
 num_worker_test = 4
 mix_prob = 0.8
 empty_cache = True
@@ -20,7 +20,7 @@ model = dict(
     n_training_samples=1,
     n_samples=4,
     stochastic=True,
-    stochastic_modules=['atten', 'proj', 'cpe', 'head'],
+    stochastic_modules=['atten', 'proj', 'cpe'],
     prior_mean=1.0, 
     prior_std=0.1, 
     post_mean_init=(1.0, 0.1), 
@@ -56,7 +56,7 @@ model = dict(
         upcast_softmax=False,
         cls_mode=False,
         
-        stochastic_modules=['atten', 'proj', 'cpe', 'head'],
+        stochastic_modules=['atten', 'proj', 'cpe'],
         n_components=4,
         prior_mean=1.0, 
         prior_std=0.1, 
@@ -132,7 +132,7 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=102400, mode="random"),
+            dict(type="SphereCrop", point_max=int(0.7*102400), mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             dict(type="ToTensor"),
