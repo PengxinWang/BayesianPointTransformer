@@ -120,12 +120,13 @@ class Point(Dict):
         copy n_samples along the batch dim
         """
         for key, value in self.items():
-            if key == "grid_size":
+            if key == "grid_size" or key == "batch":
                 continue
             elif key == "offset":
                 _bincount = offset2bincount(value)
                 _bincount = torch.repeat_interleave(_bincount, n_samples, dim=0)
                 self["offset"] = torch.cumsum(_bincount, dim=0)
+                self["batch"] = offset2batch(self.offset)
             else:
                 self[key] = torch.repeat_interleave(value, n_samples, dim=0)
             

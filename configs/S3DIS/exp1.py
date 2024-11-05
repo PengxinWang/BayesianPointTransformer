@@ -1,8 +1,8 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 4  # bs: total bs(num_pointclouds_per_epoch) in all gpu
-num_worker = 4
+batch_size = 8  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+num_worker = 8
 num_worker_test = 4
 mix_prob = 0.8
 empty_cache = True
@@ -131,7 +131,7 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=int(0.7*102400), mode="random"),
+            dict(type="SphereCrop", point_max=51200, mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             dict(type="ToTensor"),

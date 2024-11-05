@@ -582,7 +582,6 @@ class ClsTester(TesterBase):
     def collate_fn(batch):
         return collate_fn(batch)
 
-
 @TESTERS.register_module()
 class ClsVotingTester(TesterBase):
     def __init__(
@@ -706,6 +705,10 @@ class BayesClsTester(TesterBase):
         intersection_meter = AverageMeter()
         union_meter = AverageMeter()
         target_meter = AverageMeter()
+        save_path = os.path.join(self.cfg.save_path, 'result')
+        os.makedirs(save_path, exist_ok=True)
+        preds_save_path = os.path.join(save_path, 'preds.npy')
+        labels_save_path = os.path.join(save_path, 'labels.npy')
         self.model.eval()
         preds = []
         labels = []
@@ -718,8 +721,7 @@ class BayesClsTester(TesterBase):
             with torch.no_grad():
                 output_dict = self.model(input_dict)
             output = output_dict["cls_logits"]
-
-            prob = torch.exp(output)
+            prob = F.softmax(output, dim=-1)
             pred = output.max(1)[1]
             label = input_dict["category"]
             preds.append(prob)
@@ -755,15 +757,20 @@ class BayesClsTester(TesterBase):
 
         preds = torch.cat(preds, dim=0)
         labels = torch.cat(labels, dim=0)
+        np.save(preds_save_path, preds.cpu().numpy())
+        np.save(labels_save_path, labels.cpu().numpy())
+        logger.info("Saved preds and labels to .npy files.")
+
         ece = ECE_eval(preds, labels)
+        ECE_eval.plot_calibration(preds, labels, self.cfg.save_path, ece)
         iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
         accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
         mIoU = np.mean(iou_class)
         mAcc = np.mean(accuracy_class)
         allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
         logger.info(
-            "Val result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.".format(
-                mIoU, mAcc, allAcc
+            "Val result: mIoU/mAcc/allAcc/ECE {:.4f}/{:.4f}/{:.4f}/{:.4f}.".format(
+                mIoU, mAcc, allAcc, ece
             )
         )
 

@@ -1,7 +1,8 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 20 # total batch_size in all gpus
+batch_size = 40 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
+num_worker_test = 8
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
@@ -11,28 +12,40 @@ eval_epoch = 10  # sche total eval & checkpoint epoch
 
 # model settings
 model = dict(
-    type="DefaultClassifier",
+    type="BayesClassifier",
     num_classes=40,
-    backbone_embed_dim=256,
+    backbone_embed_dim=512,
+    n_components=4,
+    n_training_samples=1,
+    n_samples=4,
+    stochastic=True,
+    stochastic_modules=['head'],
+    prior_mean=1.0, 
+    prior_std=0.1, 
+    post_mean_init=(1.0, 0.1), 
+    post_std_init=(0.1, 0.05),
+    kl_weight_init=1e-4,
+    kl_weight_final=1e-2,
+    entropy_weight=1.,
     backbone=dict(
-        type="PT-v3",
+        type="PT-BNN",
         in_channels=6,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
         enc_depths=(2, 2, 2, 6, 2),
-        enc_channels=(16, 32, 64, 128, 256),
-        enc_num_head=(2, 4, 4, 8, 16),
+        enc_channels=(32, 64, 128, 256, 512),
+        enc_num_head=(2, 4, 8, 16, 32),
         enc_patch_size=(16, 16, 16, 16, 16),
         dec_depths=(2, 2, 2, 2),
-        dec_channels=(16, 32, 64, 128),
-        dec_num_head=(2, 4, 8, 16),
+        dec_channels=(64, 64, 128, 256),
+        dec_num_head=(4, 4, 8, 16),
         dec_patch_size=(16, 16, 16, 16),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.2,
+        drop_path=0.0,
         shuffle_orders=True,
         pre_norm=True,
         enable_rpe=True,
@@ -40,12 +53,13 @@ model = dict(
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=True,
-        pdnorm_bn=False,
-        pdnorm_ln=False,
-        pdnorm_decouple=True,
-        pdnorm_adaptive=False,
-        pdnorm_affine=True,
-        pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
+        
+        stochastic_modules=[],
+        n_components=4,
+        prior_mean=1.0,
+        prior_std=0.1, 
+        post_mean_init=(1.0, 0.1), 
+        post_std_init=(0.1, 0.05),
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
@@ -55,7 +69,7 @@ model = dict(
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
-optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.001, weight_decay=0.00)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.001, 0.0001],
@@ -184,6 +198,10 @@ data = dict(
         class_names=class_names,
         transform=[
             dict(type="NormalizeCoord"),
+        ],
+        test_mode=True,
+        transform=[
+            dict(type="NormalizeCoord"),
             # dict(type="ToTensor"),
             # dict(
             #     type="Collect",
@@ -231,11 +249,12 @@ hooks = [
     dict(type="CheckpointLoader"),
     dict(type="IterationTimer", warmup_iter=2),
     dict(type="InformationWriter"),
-    dict(type="ClsEvaluator"),
+    dict(type="BayesClsEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
-    dict(type="PreciseEvaluator", test_last=False),
+    # dict(type="PreciseEvaluator", test_last=False),
 ]
 
+train = dict(type="DefaultTrainer")
 # tester
 # test = dict(type="ClsVotingTester", num_repeat=2)
-test = dict(type="ClsTester", verbose=False)
+test = dict(type="BayesClsTester", verbose=False)

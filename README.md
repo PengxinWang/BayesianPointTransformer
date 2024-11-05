@@ -11,9 +11,12 @@ exp1: bnn, bce, lovasz, rpe, kl_reweighing, sto_type = ['head']
 exp2: bnn, bce, lovasz, rpe, kl_reweighting
 exp3: ptv3, bce, lovasz, rpe
 exp4: bnn, bce, lovasz, rpe, sto_type=['atten','cpe','proj']
+exp5: dynamic batching
 
 ModelNet40:
-exp0: ptv3(vanilla), ce, rpe
+exp0: ptv3(vanilla)
+exp1: bnn + sto_head
+exp2: bnn + sto_atten
 
 ## Data
 

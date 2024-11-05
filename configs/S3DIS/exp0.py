@@ -6,8 +6,8 @@ evaluate = True
 test_only = False
 seed = 25326354
 # save_path = 'exp/s3dis/semseg-pt-v3m1-0-rpe'
-num_worker = 6
-batch_size = 6
+num_worker = 8
+batch_size = 8
 batch_size_val = None
 batch_size_test = None
 epoch = 3000
@@ -130,7 +130,7 @@ data = dict(
                 mode='train',
                 return_grid_coord=True),
             dict(type='SphereCrop', sample_rate=0.6, mode='random'),
-            dict(type='SphereCrop', point_max=102400, mode='random'),
+            dict(type='SphereCrop', point_max=51200, mode='random'),
             dict(type='CenterShift', apply_z=False),
             dict(type='NormalizeColor'),
             dict(type='ToTensor'),

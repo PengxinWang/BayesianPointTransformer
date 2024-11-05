@@ -150,12 +150,14 @@ class DefaultClassifier(nn.Module):
         criteria=None,
         num_classes=40,
         backbone_embed_dim=256,
+        stochastic=False,
     ):
         super().__init__()
         self.backbone = build_model(backbone)
         self.criteria = build_criteria(criteria)
         self.num_classes = num_classes
         self.backbone_embed_dim = backbone_embed_dim
+        self.stochastic = stochastic
         self.cls_head = nn.Sequential(
             nn.Linear(backbone_embed_dim, 256),
             nn.BatchNorm1d(256),
@@ -191,17 +193,57 @@ class DefaultClassifier(nn.Module):
 class BayesClassifier(nn.Module):
     def __init__(
         self,
-        backbone=None,
-        criteria=None,
         num_classes=40,
         backbone_embed_dim=256,
+        n_components=4,
+        n_samples=4,
+        n_training_samples=1,
+        backbone=None,
+        criteria=None,
+        kl_weight_init = 1e-2,
+        kl_weight_final=1.0,
+        entropy_weight=1.0,
+        stochastic=True,
+        prior_mean=1.0, 
+        prior_std=0.40, 
+        post_mean_init=(1.0, 0.05), 
+        post_std_init=(0.40, 0.20),
+        stochastic_modules = ['atten', 'proj', 'cpe', 'head']
     ):
         super().__init__()
+        self.n_classes = num_classes
+        self.n_components = n_components
+        self.n_training_samples = n_training_samples
+        self.n_samples = n_samples
+        self.kl_weight_init = kl_weight_init
+        self.kl_weight_final = kl_weight_final
+        self.entropy_weight = entropy_weight
+        self.stochastic = stochastic
+        self.prior_mean = prior_mean 
+        self.prior_std = prior_std 
+        self.post_mean_init = post_mean_init 
+        self.post_std_init = post_std_init
         self.backbone = build_model(backbone)
         self.criteria = build_criteria(criteria)
         self.num_classes = num_classes
         self.backbone_embed_dim = backbone_embed_dim
-        self.cls_head = nn.Sequential(
+        if 'head' in stochastic_modules:
+            self.cls_head = nn.Sequential(
+                StoLinear(backbone_embed_dim, 256, 
+                          n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
+                          post_mean_init=post_mean_init, post_std_init=post_std_init),
+                nn.BatchNorm1d(256),
+                nn.ReLU(inplace=True),
+                StoLinear(256, 128,
+                          n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
+                          post_mean_init=post_mean_init, post_std_init=post_std_init),
+                nn.ReLU(inplace=True),
+                StoLinear(128, num_classes,
+                          n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
+                          post_mean_init=post_mean_init, post_std_init=post_std_init),
+            )
+        else:
+            self.cls_head = nn.Sequential(
             nn.Linear(backbone_embed_dim, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
@@ -211,7 +253,8 @@ class BayesClassifier(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(128, num_classes),
-        )
+            )
+        self.sto_layers = [m for m in self.modules() if isinstance(m, (StoLayer))]
 
     def kl_and_entropy(self):
         kl = torch.mean(torch.stack([m._kl() for m in self.sto_layers]))
@@ -227,7 +270,7 @@ class BayesClassifier(nn.Module):
         point = self.backbone(point)
         point.feat = torch_scatter.segment_csr(
                 src=point.feat,
-                indptr=nn.functional.pad(point.offset, (1, 0)),
+                indptr=nn.functional.pad(point["offset"], (1, 0)),
                 reduce="mean",
                 )
         feat = point.feat
@@ -244,13 +287,13 @@ class BayesClassifier(nn.Module):
         elif "category" in input_dict.keys():
             cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
             mean_cls_logits = torch.mean(cls_logits, dim=1)
-            nll = self.criteria(mean_cls_logits, input_dict["segment"])
+            nll = self.criteria(mean_cls_logits, input_dict["category"])
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
-            return dict(nll=nll, kl=kl, seg_logits=mean_cls_logits)
+            return dict(nll=nll, kl=kl, cls_logits=mean_cls_logits)
         else:
             cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
-            mean_seg_logits = torch.mean(cls_logits, dim=1)
+            mean_cls_logits = torch.mean(cls_logits, dim=1)
             # predictive = point_wise_entropy(seg_logits, type='predictive')
             # aleatoric = point_wise_entropy(seg_logits, type='aleatoric')
             # epistemic = predictive - aleatoric

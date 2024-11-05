@@ -90,16 +90,16 @@ class ECE(torch.nn.Module):
     """
     def __init__(self, n_bins=15):
         super().__init__()
+        self.n_bins = n_bins
         bins = torch.linspace(0, 1, n_bins+1)
         self.bin_lowers = bins[:-1]
         self.bin_uppers = bins[1:]
     
-    def forward(self, preds, labels, plot=False):
+    def forward(self, preds, labels):
         # preds.shape = [len(testset), n_classes], labels.shape[len(testset)], 
         # note: preds need to be normalized to [0,1]
         confidences, preds = torch.max(preds, dim=1)
         correct_preds = preds.eq(labels)
-
         ece = 0.
         for bin_lower, bin_upper in zip(self.bin_lowers, self.bin_uppers):
             sample_in_bin = confidences.gt(bin_lower.item())*confidences.le(bin_upper.item())
@@ -111,27 +111,47 @@ class ECE(torch.nn.Module):
                 ece += diff_in_bin.item()
         return ece
     
-    def plot_calibration(self, acc_per_bin, conf_per_bin):
-        # bin_centers = (self.bin_lowers + self.bin_uppers) / 2
-        # plt.figure(figsize=(10, 6))
-        
-        # bar_width = 0.4
-        # # Plot the accuracy
-        # plt.bar(bin_centers.numpy() - bar_width/2, acc_per_bin, width=bar_width, label='Accuracy', alpha=0.6, color='blue')
-        # # Plot the confidence
-        # plt.bar(bin_centers.numpy() + bar_width/2, conf_per_bin, width=bar_width, label='Mean Confidence', alpha=0.6, color='red')
+    def plot_calibration(self, preds, labels, save_path, ece=None):
+        confidences, preds = torch.max(preds, dim=1)
+        correct_preds = preds.eq(labels)
 
-        # # Set labels and title
-        # plt.xlabel("Confidence")
-        # # plt.ylabel("Accuracy")
-        # plt.title("Calibration Plot (Accuracy vs. Confidence)")
-        # plt.legend()
-        # plt.text(0.95, 0.05, f"ECE: {ece_score:.4f}", 
-        #      verticalalignment='bottom', horizontalalignment='right', 
-        #      transform=plt.gca().transAxes, 
-        #      color='black', fontsize=12, bbox=dict(facecolor='white', alpha=0.6))
-        # plt.savefig(save_path)
-        # plt.close()
+        # Calculate accuracy and mean confidence for each bin
+        acc_per_bin = []
+        conf_per_bin = []
+        for bin_lower, bin_upper in zip(self.bin_lowers, self.bin_uppers):
+            sample_in_bin = confidences.gt(bin_lower.item()) * confidences.le(bin_upper.item())
+            if sample_in_bin.float().mean().item() > 0:
+                acc_in_bin = correct_preds[sample_in_bin].float().mean().item()
+                avg_conf_in_bin = confidences[sample_in_bin].mean().item()
+            else:
+                acc_in_bin = 0.0
+                avg_conf_in_bin = 0.0
+            acc_per_bin.append(acc_in_bin)
+            conf_per_bin.append(avg_conf_in_bin)
+
+        # Plot accuracy and confidence bars
+        plt.figure(figsize=(6, 6))
+        bar_width = 1 / self.n_bins
+        plt.bar(self.bin_lowers.numpy(), acc_per_bin, width=bar_width, align='edge', 
+                edgecolor='black', linewidth=1, label='True Accuracy', alpha=0.6, color='blue')
+        plt.bar(self.bin_lowers.numpy(), conf_per_bin, width=bar_width, align='edge', 
+                edgecolor='black', linewidth=1, label='Mean Confidence', alpha=0.6, color='red')
+        
+        plt.xticks(ticks=[i/10 for i in range(1, self.n_bins+1)], labels=[f"{i/self.n_bins:.1f}" for i in range(1, self.n_bins+1)])
+        plt.yticks(ticks=[i/10 for i in range(1, self.n_bins+1)], labels=[f"{i/self.n_bins:.1f}" for i in range(1, self.n_bins+1)])
+        plt.xlabel("Confidence")
+        plt.xlim(0,1)
+        if ece is not None:
+            plt.text(
+                0.95, 0.05, f"ECE: {ece:.4f}",
+                verticalalignment='top', horizontalalignment='right',
+                transform=plt.gca().transAxes,
+                color='black', fontsize=12, bbox=dict(facecolor='white', alpha=0.6)
+            )
+        plt.legend()
+        save_path = os.path.join(save_path, "ECE_score.png")
+        plt.savefig(save_path)
+        plt.close()
 
 def make_dirs(dir_name):
     if not os.path.exists(dir_name):

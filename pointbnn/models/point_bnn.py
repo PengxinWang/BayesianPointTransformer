@@ -422,7 +422,6 @@ class SerializedPooling(PointModule):
             code = code[perm]
             order = order[perm]
             inverse = inverse[perm]
-
         point_dict = Dict(
             feat=torch_scatter.segment_csr(
                 self.proj(point.feat)[indices], idx_ptr, reduce=self.reduce
@@ -437,7 +436,6 @@ class SerializedPooling(PointModule):
             serialized_depth=point.serialized_depth - pooling_depth,
             batch=point.batch[head_indices],
         )
-
         if "condition" in point.keys():
             point_dict["condition"] = point.condition
         if "context" in point.keys():

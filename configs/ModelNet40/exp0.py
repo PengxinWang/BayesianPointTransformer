@@ -1,12 +1,14 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 2 # bs: total bs in all gpus
-num_worker = 4  
-batch_size_val = 2
-empty_cache = True
-enable_amp = True
-epoch = 100
-eval_epoch = 10
+batch_size = 40 # total batch_size in all gpus
+num_worker = 8  # total num_workers in all gpus
+num_worker_test = 4
+batch_size_val = 30
+batch_size_test = 30
+empty_cache = True 
+enable_amp = True # enable automatic mixed precision
+epoch = 100  # total epoch, data loop = epoch // eval_epoch
+eval_epoch = 10  # sche total eval & checkpoint epoch
 
 # model settings
 model = dict(
@@ -21,11 +23,11 @@ model = dict(
         enc_depths=(2, 2, 2, 6, 2),
         enc_channels=(32, 64, 128, 256, 512),
         enc_num_head=(2, 4, 8, 16, 32),
-        enc_patch_size=(1024, 1024, 1024, 1024, 1024),
+        enc_patch_size=(16, 16, 16, 16, 16),
         dec_depths=(2, 2, 2, 2),
         dec_channels=(64, 64, 128, 256),
         dec_num_head=(4, 4, 8, 16),
-        dec_patch_size=(1024, 1024, 1024, 1024),
+        dec_patch_size=(16, 16, 16, 16),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
@@ -39,12 +41,6 @@ model = dict(
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=True,
-        pdnorm_bn=False,
-        pdnorm_ln=False,
-        pdnorm_decouple=True,
-        pdnorm_adaptive=False,
-        pdnorm_affine=True,
-        pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
@@ -188,6 +184,7 @@ data = dict(
         ],
         test_mode=True,
         test_cfg=dict(
+            voting=False,
             post_transform=[
                 dict(
                     type="GridSample",
@@ -200,21 +197,21 @@ data = dict(
                 dict(type="ToTensor"),
                 dict(
                     type="Collect",
-                    keys=("coord", "grid_coord"),
+                    keys=("coord", "grid_coord", "category"),
                     feat_keys=["coord", "normal"],
                 ),
             ],
             aug_transform=[
-                [dict(type="RandomScale", scale=[1, 1], anisotropic=True)],  # 1
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 2
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 3
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 4
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 6
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 7
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 8
-                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 9
+                # [dict(type="RandomScale", scale=[1, 1], anisotropic=True)],  # 1
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 2
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 3
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 4
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 6
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 7
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 8
+                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 9
             ],
         ),
     ),
@@ -227,8 +224,9 @@ hooks = [
     dict(type="InformationWriter"),
     dict(type="ClsEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
-    dict(type="PreciseEvaluator", test_last=False),
+    # dict(type="PreciseEvaluator", test_last=False),
 ]
 
+train = dict(type="DefaultTrainer")
 # tester
-test = dict(type="ClsTester", verbose=False)
+test = dict(type="BayesClsTester", verbose=False)
