@@ -1,14 +1,14 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 36 # total batch_size in all gpus
+batch_size = 40 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
-num_worker_test = 4
+num_worker_test = 8
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
 enable_amp = True # enable automatic mixed precision
-epoch = 20  # total epoch, data loop = epoch // eval_epoch
-eval_epoch = 5  # sche total eval & checkpoint epoch
+epoch = 100  # total epoch, data loop = epoch // eval_epoch
+eval_epoch = 10  # sche total eval & checkpoint epoch
 
 # model settings
 model = dict(
@@ -19,13 +19,13 @@ model = dict(
     n_training_samples=1,
     n_samples=4,
     stochastic=True,
-    stochastic_modules=[],
+    stochastic_modules=['head'],
     prior_mean=1.0, 
     prior_std=0.1, 
     post_mean_init=(1.0, 0.1), 
     post_std_init=(0.1, 0.05),
-    kl_weight_init=1e-2,
-    kl_weight_final=1e-1,
+    kl_weight_init=1e-4,
+    kl_weight_final=1e-2,
     entropy_weight=1.,
     backbone=dict(
         type="PT-BNN",
@@ -54,7 +54,7 @@ model = dict(
         upcast_softmax=False,
         cls_mode=True,
         
-        stochastic_modules=[],
+        stochastic_modules=['atten', 'proj', 'cpe'],
         n_components=4,
         prior_mean=1.0,
         prior_std=0.1, 
@@ -69,6 +69,7 @@ model = dict(
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
+# optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)
 optimizer = dict(type="Adam", lr=0.001, weight_decay=0.00)
 scheduler = dict(
     type="OneCycleLR",

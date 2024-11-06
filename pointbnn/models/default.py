@@ -205,9 +205,9 @@ class BayesClassifier(nn.Module):
         entropy_weight=1.0,
         stochastic=True,
         prior_mean=1.0, 
-        prior_std=0.40, 
+        prior_std=0.10, 
         post_mean_init=(1.0, 0.05), 
-        post_std_init=(0.40, 0.20),
+        post_std_init=(0.10, 0.05),
         stochastic_modules = ['atten', 'proj', 'cpe', 'head']
     ):
         super().__init__()
@@ -229,7 +229,9 @@ class BayesClassifier(nn.Module):
         self.backbone_embed_dim = backbone_embed_dim
         if 'head' in stochastic_modules:
             self.cls_head = nn.Sequential(
-                nn.Linear(backbone_embed_dim, 256),
+                StoLinear(backbone_embed_dim, 256,
+                          n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
+                          post_mean_init=post_mean_init, post_std_init=post_std_init),
                 nn.BatchNorm1d(256),
                 nn.ReLU(inplace=True),
                 nn.Linear(256, 128),
@@ -253,6 +255,9 @@ class BayesClassifier(nn.Module):
         self.sto_layers = [m for m in self.modules() if isinstance(m, (StoLayer))]
 
     def kl_and_entropy(self):
+        if not self.sto_layers:
+            device = next(self.parameters()).device
+            return torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
         kl = torch.mean(torch.stack([m._kl() for m in self.sto_layers]))
         entropy = torch.mean(torch.stack([m._entropy() for m in self.sto_layers]))
         return (kl, entropy)
@@ -263,6 +268,7 @@ class BayesClassifier(nn.Module):
             point.get_samples(self.n_training_samples)
         else:
             point.get_samples(self.n_samples)
+
         point = self.backbone(point)
         point.feat = torch_scatter.segment_csr(
                 src=point.feat,
@@ -270,7 +276,9 @@ class BayesClassifier(nn.Module):
                 reduce="mean",
                 )
         feat = point.feat
+        print(f'check shape of pointfeat after backbone: {feat.shape}')
         cls_logits = self.cls_head(feat)
+        print(f'check shape of pointfeat after head: {cls_logits.shape}')
         if self.training:
             if self.n_training_samples > 1:
                 cls_logits = cls_logits.view(-1, self.n_training_samples, cls_logits.size(1))
@@ -283,7 +291,7 @@ class BayesClassifier(nn.Module):
             kl = kl*self.n_training_samples/(target_cats.shape[0]+1)
             # kl = kl*self.n_training_samples/target_segments.shape[0]
             return dict(nll=nll, kl=kl)
-        elif "category" in input_dict.keys():
+        elif "category" in input_dict.keys():                        
             cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
             mean_cls_logits = torch.mean(cls_logits, dim=1)
             nll = self.criteria(mean_cls_logits, input_dict["category"])

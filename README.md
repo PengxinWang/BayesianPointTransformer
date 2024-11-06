@@ -15,8 +15,9 @@ exp5: dynamic batching
 
 ModelNet40:
 exp0: ptv3(vanilla)
-exp1: bnn + sto_head
-exp2: bnn + sto_atten
+exp1: no regularization
+exp2: bnn, sto_type=['proj']
+exp3: 
 
 ## Data
 

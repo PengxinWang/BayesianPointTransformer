@@ -2,7 +2,7 @@ _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
 batch_size = 36 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
-num_worker_test = 4
+num_worker_test = 8
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
