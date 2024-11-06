@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=ModelNet40
-CONFIG=exp0
-EXP_NAME=exp0
+CONFIG=exp1
+EXP_NAME=exp1
 
 WEIGHT=None
 RESUME=false

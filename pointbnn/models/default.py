@@ -229,14 +229,10 @@ class BayesClassifier(nn.Module):
         self.backbone_embed_dim = backbone_embed_dim
         if 'head' in stochastic_modules:
             self.cls_head = nn.Sequential(
-                StoLinear(backbone_embed_dim, 256, 
-                          n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
-                          post_mean_init=post_mean_init, post_std_init=post_std_init),
+                nn.Linear(backbone_embed_dim, 256),
                 nn.BatchNorm1d(256),
                 nn.ReLU(inplace=True),
-                StoLinear(256, 128,
-                          n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
-                          post_mean_init=post_mean_init, post_std_init=post_std_init),
+                nn.Linear(256, 128),
                 nn.ReLU(inplace=True),
                 StoLinear(128, num_classes,
                           n_components=n_components, prior_mean=prior_mean, prior_std=prior_std,
@@ -276,12 +272,15 @@ class BayesClassifier(nn.Module):
         feat = point.feat
         cls_logits = self.cls_head(feat)
         if self.training:
+            if self.n_training_samples > 1:
+                cls_logits = cls_logits.view(-1, self.n_training_samples, cls_logits.size(1))
+                cls_logits = torch.mean(cls_logits, dim=1)
             target_cats = input_dict["category"]
             nll = self.criteria(cls_logits, target_cats)
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
             # kl = kl * self.n_training_samples
-            kl = kl*self.n_training_samples/math.sqrt(target_cats.shape[0]+1)
+            kl = kl*self.n_training_samples/(target_cats.shape[0]+1)
             # kl = kl*self.n_training_samples/target_segments.shape[0]
             return dict(nll=nll, kl=kl)
         elif "category" in input_dict.keys():

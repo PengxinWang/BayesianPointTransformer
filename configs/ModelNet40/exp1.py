@@ -200,16 +200,6 @@ data = dict(
             dict(type="NormalizeCoord"),
         ],
         test_mode=True,
-        transform=[
-            dict(type="NormalizeCoord"),
-            # dict(type="ToTensor"),
-            # dict(
-            #     type="Collect",
-            #     keys=("coord", "category"),
-            #     feat_keys=["coord", "normal"],
-            # ),
-        ],
-        test_mode=True,
         test_cfg=dict(
             voting=False,
             post_transform=[
