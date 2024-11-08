@@ -74,6 +74,8 @@ def get_linear_weight(current_epoch, max_epoch, weight_init=1e-2, weight_final=1
 
 def point_wise_entropy(logits, type='predictive'):
     # prob.shape: [N, n_samples, C]
+    if logits.dim() == 2:
+        logits = logits.unsqueeze(1)
     prob = F.softmax(logits, dim=-1)
     if type=='predictive':
         prob = torch.mean(prob, dim=1)

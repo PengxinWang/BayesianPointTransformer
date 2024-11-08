@@ -45,7 +45,8 @@ class DefaultSegmentorV2(nn.Module):
             return dict(loss=loss, seg_logits=seg_logits)
         # test
         else:
-            return dict(seg_logits=seg_logits)
+            predictive = point_wise_entropy(seg_logits, type='predictive')
+            return dict(seg_logits=seg_logits, predictive=predictive)
 
 @MODELS.register_module()
 class BayesSegmentor(nn.Module):
@@ -268,7 +269,6 @@ class BayesClassifier(nn.Module):
             point.get_samples(self.n_training_samples)
         else:
             point.get_samples(self.n_samples)
-
         point = self.backbone(point)
         point.feat = torch_scatter.segment_csr(
                 src=point.feat,
@@ -276,9 +276,7 @@ class BayesClassifier(nn.Module):
                 reduce="mean",
                 )
         feat = point.feat
-        print(f'check shape of pointfeat after backbone: {feat.shape}')
         cls_logits = self.cls_head(feat)
-        print(f'check shape of pointfeat after head: {cls_logits.shape}')
         if self.training:
             if self.n_training_samples > 1:
                 cls_logits = cls_logits.view(-1, self.n_training_samples, cls_logits.size(1))
@@ -291,15 +289,15 @@ class BayesClassifier(nn.Module):
             kl = kl*self.n_training_samples/(target_cats.shape[0]+1)
             # kl = kl*self.n_training_samples/target_segments.shape[0]
             return dict(nll=nll, kl=kl)
-        elif "category" in input_dict.keys():                        
-            cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
+        elif "category" in input_dict.keys():
+            cls_logits = cls_logits.reshape(-1, self.n_samples, cls_logits.size(1))
             mean_cls_logits = torch.mean(cls_logits, dim=1)
             nll = self.criteria(mean_cls_logits, input_dict["category"])
             kl, entropy = self.kl_and_entropy()
             kl = kl - self.entropy_weight * entropy
             return dict(nll=nll, kl=kl, cls_logits=mean_cls_logits)
         else:
-            cls_logits = cls_logits.view(-1, self.n_samples, cls_logits.size(1))
+            cls_logits = cls_logits.reshape(-1, self.n_samples, cls_logits.size(1))
             mean_cls_logits = torch.mean(cls_logits, dim=1)
             # predictive = point_wise_entropy(seg_logits, type='predictive')
             # aleatoric = point_wise_entropy(seg_logits, type='aleatoric')

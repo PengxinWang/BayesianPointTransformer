@@ -152,6 +152,7 @@ class SemSegTester(TesterBase):
             segment = data_dict.pop("segment")
             data_name = data_dict.pop("name")
             pred_save_path = os.path.join(save_path, "{}_pred.npy".format(data_name))
+            predictive_save_path = os.path.join(save_path, "{}_predictive.npy".format(data_name))
             if os.path.isfile(pred_save_path):
                 logger.info(
                     "{}/{}: {}, loaded pred and label.".format(
@@ -163,6 +164,8 @@ class SemSegTester(TesterBase):
                     segment = data_dict["origin_segment"]
             else:
                 pred = torch.zeros((segment.size, self.cfg.data.num_classes)).cuda()
+                seg_count = torch.zeros((segment.size)).cuda()
+                predictive = torch.zeros((segment.size,)).cuda()
                 for i in range(len(fragment_list)):
                     fragment_batch_size = 1
                     s_i, e_i = i * fragment_batch_size, min((i + 1)*fragment_batch_size, len(fragment_list))
@@ -172,13 +175,17 @@ class SemSegTester(TesterBase):
                             input_dict[key] = input_dict[key].cuda(non_blocking=True)
                     idx_part = input_dict["index"]
                     with torch.no_grad():
-                        pred_part = self.model(input_dict)["seg_logits"]  # (n, k)
+                        pred_part_dict = self.model(input_dict)
+                        pred_part = pred_part_dict["seg_logits"]  # (n, k)
+                        predictive_part = pred_part_dict["predictive"]
                         pred_part = F.softmax(pred_part, -1)
                         if self.cfg.empty_cache:
                             torch.cuda.empty_cache()
                         bs = 0
                         for be in input_dict["offset"]:
                             pred[idx_part[bs:be], :] += pred_part[bs:be]
+                            predictive[[idx_part[bs:be]]] += predictive_part[bs:be]
+                            seg_count[[idx_part[bs:be]]] += 1
                             bs = be
 
                     logger.info(
@@ -198,6 +205,16 @@ class SemSegTester(TesterBase):
                     assert "inverse" in data_dict.keys()
                     pred = pred[data_dict["inverse"]]
                     segment = data_dict["origin_segment"]
+                
+                nzero_mask = (seg_count != 0)
+                predictive[nzero_mask] = torch.div(predictive[nzero_mask], seg_count[nzero_mask])
+                predictive = predictive.detach().cpu()
+                if "origin_segment" in data_dict.keys():
+                    assert "inverse" in data_dict.keys()
+                    pred = pred[data_dict["inverse"]]
+                    predictive = predictive[data_dict["inverse"]]
+                    segment = data_dict["origin_segment"]
+                np.save(predictive_save_path, pred)
                 np.save(pred_save_path, pred)
             if (self.cfg.data.test.type == "ScanNetDataset" or self.cfg.data.test.type == "ScanNet200Dataset"):
                 np.savetxt(

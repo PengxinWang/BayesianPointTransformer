@@ -5,8 +5,8 @@ resume = False
 evaluate = True
 test_only = False
 seed = 25326354
-# save_path = 'exp/s3dis/semseg-pt-v3m1-0-rpe'
 num_worker = 8
+num_worker_test = 4
 batch_size = 8
 batch_size_val = None
 batch_size_test = None
@@ -188,4 +188,5 @@ data = dict(
                     keys=('coord', 'grid_coord', 'index'),
                     feat_keys=('color', 'normal'))
             ],
+            aug_transform=[],
             )))

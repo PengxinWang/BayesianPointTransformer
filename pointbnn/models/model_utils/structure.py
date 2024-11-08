@@ -117,17 +117,23 @@ class Point(Dict):
     
     def get_samples(self, n_samples=4):
         """
-        copy n_samples along the batch dim
+        copy n_samples
+        original: [pc1_1, pc1_2, pc1_3, pc2_1, pc2_2]
+        repeated(n_sample=2): [pc1_1, pc1_2, pc1_3, pc1_1_copy, pc1_2_copy, pc1_3_copy,
+                                pc2_1, pc2_2, pc2_1_copy, pc2_2_copy]
         """
+        origin_bincount = offset2bincount(self["offset"])
+        _bincount = torch.repeat_interleave(origin_bincount, n_samples, dim=0)
+        self["offset"] = torch.cumsum(_bincount, dim=0)
+        self["batch"] = offset2batch(self.offset)
+        origin_bincount_list = origin_bincount.tolist()
         for key, value in self.items():
-            if key == "grid_size" or key == "batch":
+            if key in ["grid_size", "offset", "batch"]:
                 continue
-            elif key == "offset":
-                _bincount = offset2bincount(value)
-                _bincount = torch.repeat_interleave(_bincount, n_samples, dim=0)
-                self["offset"] = torch.cumsum(_bincount, dim=0)
-                self["batch"] = offset2batch(self.offset)
-            else:
+            elif key == "category":
                 self[key] = torch.repeat_interleave(value, n_samples, dim=0)
+            else:
+                split_data = torch.split(value, origin_bincount_list)
+                self[key] = torch.cat([torch.cat([pc] * n_samples) for pc in split_data])
             
     
