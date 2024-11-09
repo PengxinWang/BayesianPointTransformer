@@ -1,22 +1,34 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 40 # total batch_size in all gpus
+batch_size = 30 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
 num_worker_test = 4
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
 enable_amp = True # enable automatic mixed precision
-epoch = 10  # total epoch, data loop = epoch // eval_epoch
-eval_epoch = 2  # sche total eval & checkpoint epoch
+epoch = 20  # total epoch, data loop = epoch // eval_epoch
+eval_epoch = 5  # sche total eval & checkpoint epoch
 
 # model settings
 model = dict(
-    type="DefaultClassifier",
+    type="BayesClassifier",
     num_classes=40,
     backbone_embed_dim=512,
+    n_components=4,
+    n_training_samples=1,
+    n_samples=4,
+    stochastic=True,
+    stochastic_modules=[],
+    prior_mean=1.0, 
+    prior_std=0.1, 
+    post_mean_init=(1.0, 0.1), 
+    post_std_init=(0.1, 0.05),
+    kl_weight_init=1e-2,
+    kl_weight_final=1e-1,
+    entropy_weight=1.,
     backbone=dict(
-        type="PT-v3",
+        type="PT-BNN",
         in_channels=6,
         order=("z", "z-trans", "hilbert", "hilbert-trans"),
         stride=(2, 2, 2, 2),
@@ -33,26 +45,31 @@ model = dict(
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.2,
+        drop_path=0.0,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=False,
+        enable_rpe=True,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=True,
+        
+        stochastic_modules=['proj'],
+        n_components=4,
+        prior_mean=1.0,
+        prior_std=0.1, 
+        post_mean_init=(1.0, 0.1), 
+        post_std_init=(0.1, 0.05),
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
-        # dict(type="LovaszLoss", loss_weight=1.0, ignore_index=-1),
-        # dict(type="DiceLoss", loss_weight=1.0, ignore_index=-1),
     ],
 )
 
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
-optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)
+optimizer = dict(type="Adam", lr=0.001, weight_decay=0.00)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.001, 0.0001],
@@ -65,7 +82,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "/userhome/cs2/pxwang24/capstone/Weaver/data/modelnet40_normal_resampled"
+data_root = "/userhome/cs2/yanniki/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",
@@ -222,11 +239,12 @@ hooks = [
     dict(type="CheckpointLoader"),
     dict(type="IterationTimer", warmup_iter=2),
     dict(type="InformationWriter"),
-    dict(type="ClsEvaluator"),
+    dict(type="BayesClsEvaluator"),
     dict(type="CheckpointSaver", save_freq=None),
     # dict(type="PreciseEvaluator", test_last=False),
 ]
 
 train = dict(type="DefaultTrainer")
 # tester
+# test = dict(type="ClsVotingTester", num_repeat=2)
 test = dict(type="BayesClsTester", verbose=False)

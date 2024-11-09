@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 from collections.abc import Mapping, Sequence
 import torch
 from torch.utils.data import Dataset
@@ -85,8 +86,8 @@ class CustomedDynamicDistributedSampler(DistributedSampler):
     def __init__(self,
                 dataset: Dataset, 
                 points_per_sample,
-                num_replicas: int | None = None, 
-                rank: int | None = None, 
+                num_replicas, 
+                rank, 
                 shuffle: bool = True, 
                 seed: int = 0, 
                 drop_last: bool = True) -> None:

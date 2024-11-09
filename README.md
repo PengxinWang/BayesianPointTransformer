@@ -8,16 +8,19 @@
 S3DIS:
 exp0: ptv3(vanilla), ce, lovasz, rpe
 exp1: bnn, bce, lovasz, rpe, kl_reweighing, sto_type = ['head']
-exp2: bnn, bce, lovasz, rpe, kl_reweighting
+exp2: bnn, bce, lovasz, rpe, kl_reweighting, sto_type = []
 exp3: ptv3, bce, lovasz, rpe
 exp4: bnn, bce, lovasz, rpe, sto_type=['atten','cpe','proj']
 exp5: dynamic batching
 
 ModelNet40:
 exp0: ptv3(vanilla)
-exp1: no regularization
-exp2: bnn, sto_type=['proj']
-exp3: 
+exp1: sto_type = ['head']
+exp2: sto_type = ['atten']
+exp3: sto_type = ['head', 'atten']
+exp4: sto_type = ['proj']
+exp5: sto_type = ['cpe']
+exp6: sto_type = ['atten', 'proj', 'cpe']
 
 ## Data
 
