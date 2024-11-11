@@ -488,7 +488,6 @@ class SerializedUnpooling(PointModule):
         if norm_layer is not None:
             self.proj.add(norm_layer(out_channels))
             self.proj_skip.add(norm_layer(out_channels))
-
         if act_layer is not None:
             self.proj.add(act_layer())
             self.proj_skip.add(act_layer())
@@ -496,6 +495,12 @@ class SerializedUnpooling(PointModule):
         self.traceable = traceable
 
     def forward(self, point):
+        for module in self.proj.modules():
+            if isinstance(module, nn.BatchNorm1d):
+                module.running_var.data = torch.clamp(module.running_var.data, max=500)
+        for module in self.proj_skip.modules():
+            if isinstance(module, nn.BatchNorm1d):
+                module.running_var.data = torch.clamp(module.running_var.data, max=500)
         assert "pooling_parent" in point.keys()
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
@@ -596,7 +601,7 @@ class PointBNN(PointModule):
         assert self.cls_mode or self.num_stages == len(dec_num_head) + 1
         assert self.cls_mode or self.num_stages == len(dec_patch_size) + 1
 
-        bn_layer = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
+        bn_layer = partial(nn.BatchNorm1d, eps=1e-2, momentum=0.05)
         ln_layer = nn.LayerNorm
         act_layer = nn.GELU
 
