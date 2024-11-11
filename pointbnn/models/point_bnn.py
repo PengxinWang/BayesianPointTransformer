@@ -470,30 +470,32 @@ class SerializedUnpooling(PointModule):
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
         post_std_init=(0.25, 0.10),
+        stochastic_modules=[],
     ):
         super().__init__()
         self.proj = PointSequential(nn.Linear(in_channels, out_channels))
         self.proj_skip = PointSequential(nn.Linear(skip_channels, out_channels))
         self.pre_norm = pre_norm
         self.norm_layer = norm_layer
-        # self.proj = PointSequential(
-        #     StoLinear(in_channels, out_channels, n_components=n_components,
-        #     prior_mean=prior_mean, prior_std=prior_std,
-        #     post_mean_init=post_mean_init, post_std_init=post_std_init
-        #     )
-        # )
-        # self.proj_skip = PointSequential(
-        #     StoLinear(in_channels, out_channels, n_components=n_components,
-        #     prior_mean=prior_mean, prior_std=prior_std,
-        #     post_mean_init=post_mean_init, post_std_init=post_std_init
-        #     )
-        # )
+        if 'pooling' in stochastic_modules:
+            self.proj = PointSequential(
+                StoLinear(in_channels, out_channels, n_components=n_components,
+                prior_mean=prior_mean, prior_std=prior_std,
+                post_mean_init=post_mean_init, post_std_init=post_std_init
+                )
+            )
+            self.proj_skip = PointSequential(
+                StoLinear(in_channels, out_channels, n_components=n_components,
+                prior_mean=prior_mean, prior_std=prior_std,
+                post_mean_init=post_mean_init, post_std_init=post_std_init
+                )
+            )
 
         if norm_layer is not None:
 
             if self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(in_channels))
-                self.norm2 = PointSequential(norm_layer(in_channels))
+                self.norm2 = PointSequential(norm_layer(skip_channels))
             elif not self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(out_channels))
                 self.norm2 = PointSequential(norm_layer(out_channels))
