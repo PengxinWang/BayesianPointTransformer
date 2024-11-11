@@ -437,8 +437,8 @@ class BayesSemSegTester(TesterBase):
                     epistemic = epistemic[data_dict["inverse"]]
                     segment = data_dict["origin_segment"]
                 np.save(pred_save_path, pred)
-                np.save(aleatoric_save_path, pred)
-                np.save(epistemic_save_path, pred)
+                np.save(aleatoric_save_path, aleatoric)
+                np.save(epistemic_save_path, epistemic)
             intersection, union, target = intersection_and_union(
                 pred, segment, self.cfg.data.num_classes, self.cfg.data.ignore_index
             )

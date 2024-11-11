@@ -182,9 +182,9 @@ class DefaultDataset(Dataset):
             plt.xlabel(f'Num of Points')
             plt.ylabel(f'Frequency')
             if after_transform:
-                plt.title(f'Num of Points per Sample (After Transformation)')
+                plt.title(f'Num of Points(After Transformation)')
             else:
-                plt.title(f'Num of Points per Sample (Before Transformation)')
+                plt.title(f'Num of Points(Before Transformation)')
             plt.legend()     
             if after_transform:
                 plt.savefig(os.path.join(save_path, f'dataset_transformed.png'))
