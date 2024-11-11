@@ -475,6 +475,7 @@ class SerializedUnpooling(PointModule):
         self.proj = PointSequential(nn.Linear(in_channels, out_channels))
         self.proj_skip = PointSequential(nn.Linear(skip_channels, out_channels))
         self.pre_norm = pre_norm
+        self.norm_layer = norm_layer
         # self.proj = PointSequential(
         #     StoLinear(in_channels, out_channels, n_components=n_components,
         #     prior_mean=prior_mean, prior_std=prior_std,
@@ -489,20 +490,14 @@ class SerializedUnpooling(PointModule):
         # )
 
         if norm_layer is not None:
-<<<<<<< HEAD
+
             if self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(in_channels))
                 self.norm1 = PointSequential(norm_layer(in_channels))
             elif not self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(out_channels))
                 self.norm1 = PointSequential(norm_layer(out_channels))
-=======
-            self.proj.add(norm_layer(out_channels))
-            self.proj_skip.add(norm_layer(out_channels))
->>>>>>> 028e69569bd74b490d0bf5cf524c7dca3f65a6b2
-        if act_layer is not None:
-            self.proj.add(act_layer())
-            self.proj_skip.add(act_layer())
+
 
         self.traceable = traceable
 
@@ -517,15 +512,15 @@ class SerializedUnpooling(PointModule):
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
         inverse = point.pop("pooling_inverse")
-        if (norm_layer is not None) and self.pre_norm:
+        if (self.norm_layer is not None) and self.pre_norm:
             point = self.norm1(point)
         point = self.proj(point)
-        if (norm_layer is not None) and not self.pre_norm:
+        if (self.norm_layer is not None) and not self.pre_norm:
             point = self.norm1(point)
-        if (norm_layer is not None) and self.pre_norm:
+        if (self.norm_layer is not None) and self.pre_norm:
             parent = self.norm2(parent)    
         parent = self.proj_skip(parent)
-        if (norm_layer is not None) and not self.pre_norm:
+        if (self.norm_layer is not None) and not self.pre_norm:
             parent = self.norm2(parent) 
         parent.feat = parent.feat + point.feat[inverse]
 
