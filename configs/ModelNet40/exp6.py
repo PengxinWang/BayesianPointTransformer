@@ -82,7 +82,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "/userhome/cs2/yanniki/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
+data_root = "/userhome/cs2/pxwang24/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",

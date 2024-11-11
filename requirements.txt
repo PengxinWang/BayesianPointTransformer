@@ -1,13 +1,23 @@
-conda create -n bpt python=3.8 -y
-conda activate pointcept
+conda create -n py38 python=3.8 -y
+conda activate py38
 
 conda install ninja -y
 conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch -y
 conda install h5py pyyaml -c anaconda -y
 conda install sharedarray tensorboard tensorboardx yapf addict einops scipy plyfile termcolor timm -c conda-forge -y
-conda install pytorch-cluster pytorch-scatter pytorch-sparse -c pyg -y
+
+wget https://data.pyg.org/whl/torch-1.12.0%2Bcu113/torch_cluster-1.6.0%2Bpt112cu113-cp38-cp38-linux_x86_64.whl
+pip install torch_cluster-1.6.0+pt112cu113-cp38-cp38-linux_x86_64.whl
+
+wget https://data.pyg.org/whl/torch-1.12.0%2Bcu113/torch_scatter-2.1.0%2Bpt112cu113-cp38-cp38-linux_x86_64.whl
+pip install torch_scatter-2.1.0+pt112cu113-cp38-cp38-linux_x86_64.whl
+
+wget https://data.pyg.org/whl/torch-1.12.0%2Bcu113/torch_sparse-0.6.15%2Bpt112cu113-cp38-cp38-linux_x86_64.whl
+pip install torch_sparse-0.6.15+pt112cu113-cp38-cp38-linux_x86_64.whl
 
 pip install torch-geometric
 pip install spconv-cu113
 pip install open3d
 pip install seaborn
+
+# conda install pytorch-cluster pytorch-scatter pytorch-sparse -c pyg -y

@@ -645,7 +645,7 @@ class PointBNN(PointModule):
                         in_channels=enc_channels[s - 1],
                         out_channels=enc_channels[s],
                         stride=stride[s - 1],
-                        norm_layer=ln_layer,
+                        norm_layer=bn_layer,
                         act_layer=act_layer,
                         shuffle_orders=shuffle_orders,
                         n_components=n_components,
