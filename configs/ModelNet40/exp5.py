@@ -54,7 +54,7 @@ model = dict(
         upcast_softmax=False,
         cls_mode=True,
         
-        stochastic_modules=['atten'],
+        stochastic_modules=['cpe'],
         n_components=4,
         prior_mean=1.0,
         prior_std=0.1, 

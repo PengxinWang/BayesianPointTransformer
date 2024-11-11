@@ -4,8 +4,8 @@ PYTHON=python3
 TEST_CODE=test.py
 
 DATASET=ModelNet40
-CONFIG=exp1
-EXP_NAME=exp1
+CONFIG=exp0
+EXP_NAME=exp0
 WEIGHT=model_best
 GPU=None
 

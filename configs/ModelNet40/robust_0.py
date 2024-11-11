@@ -1,6 +1,6 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 30 # total batch_size in all gpus
+batch_size = 36 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
 num_worker_test = 4
 batch_size_val = 30
@@ -19,7 +19,7 @@ model = dict(
     n_training_samples=1,
     n_samples=4,
     stochastic=True,
-    stochastic_modules=['heads'],
+    stochastic_modules=[],
     prior_mean=1.0, 
     prior_std=0.1, 
     post_mean_init=(1.0, 0.1), 
@@ -54,7 +54,7 @@ model = dict(
         upcast_softmax=False,
         cls_mode=True,
         
-        stochastic_modules=['atten'],
+        stochastic_modules=[],
         n_components=4,
         prior_mean=1.0,
         prior_std=0.1, 
@@ -247,4 +247,5 @@ hooks = [
 train = dict(type="DefaultTrainer")
 # tester
 # test = dict(type="ClsVotingTester", num_repeat=2)
-test = dict(type="BayesClsTester", verbose=False)
+# test = dict(type="BayesClsTester", verbose=False)
+test = dict(type="RobustnessTester", verbose=False)

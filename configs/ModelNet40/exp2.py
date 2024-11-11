@@ -1,8 +1,8 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 36 # total batch_size in all gpus
+batch_size = 30 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
-num_worker_test = 8
+num_worker_test = 4
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
@@ -19,7 +19,7 @@ model = dict(
     n_training_samples=1,
     n_samples=4,
     stochastic=True,
-    stochastic_modules=[],
+    stochastic_modules=['head'],
     prior_mean=1.0, 
     prior_std=0.1, 
     post_mean_init=(1.0, 0.1), 
@@ -54,7 +54,7 @@ model = dict(
         upcast_softmax=False,
         cls_mode=True,
         
-        stochastic_modules=[],
+        stochastic_modules=['atten'],
         n_components=4,
         prior_mean=1.0,
         prior_std=0.1, 
@@ -82,7 +82,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "/userhome/cs2/pxwang24/capstone/Weaver/data/modelnet40_normal_resampled"
+data_root = "/userhome/cs2/yanniki/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",
