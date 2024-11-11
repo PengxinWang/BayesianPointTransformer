@@ -350,6 +350,7 @@ class SerializedPooling(PointModule):
         out_channels,
         stride=2,
         norm_layer=None,
+        pre_norm=True,
         act_layer=None,
         reduce="max",
         shuffle_orders=True,
@@ -368,6 +369,7 @@ class SerializedPooling(PointModule):
         self.stride = stride
         assert reduce in ["sum", "mean", "min", "max"]
         self.reduce = reduce
+        self.pre_norm = pre_norm
         self.shuffle_orders = shuffle_orders
         self.traceable = traceable
 
@@ -445,7 +447,7 @@ class SerializedPooling(PointModule):
             point_dict["pooling_inverse"] = cluster
             point_dict["pooling_parent"] = point
         point = Point(point_dict)
-        if self.norm is not None:
+        if self.norm is not None and not self.pre_norm:
             point = self.norm(point)
         if self.act is not None:
             point = self.act(point)
@@ -460,6 +462,7 @@ class SerializedUnpooling(PointModule):
         skip_channels,
         out_channels,
         norm_layer=None,
+        pre_norm=True,
         act_layer=None,
         traceable=False,  # record parent and cluster
         n_components=4,
@@ -471,7 +474,7 @@ class SerializedUnpooling(PointModule):
         super().__init__()
         self.proj = PointSequential(nn.Linear(in_channels, out_channels))
         self.proj_skip = PointSequential(nn.Linear(skip_channels, out_channels))
-
+        self.pre_norm = pre_norm
         # self.proj = PointSequential(
         #     StoLinear(in_channels, out_channels, n_components=n_components,
         #     prior_mean=prior_mean, prior_std=prior_std,
@@ -486,9 +489,12 @@ class SerializedUnpooling(PointModule):
         # )
 
         if norm_layer is not None:
-            self.proj.add(norm_layer(out_channels))
-            self.proj_skip.add(norm_layer(out_channels))
-
+            if self.pre_norm:
+                self.norm1 = PointSequential(norm_layer(in_channels))
+                self.norm1 = PointSequential(norm_layer(in_channels))
+            elif not self.pre_norm:
+                self.norm1 = PointSequential(norm_layer(out_channels))
+                self.norm1 = PointSequential(norm_layer(out_channels))
         if act_layer is not None:
             self.proj.add(act_layer())
             self.proj_skip.add(act_layer())
@@ -500,8 +506,16 @@ class SerializedUnpooling(PointModule):
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
         inverse = point.pop("pooling_inverse")
+        if (norm_layer is not None) and self.pre_norm:
+            point = self.norm1(point)
         point = self.proj(point)
+        if (norm_layer is not None) and not self.pre_norm:
+            point = self.norm1(point)
+        if (norm_layer is not None) and self.pre_norm:
+            parent = self.norm2(parent)    
         parent = self.proj_skip(parent)
+        if (norm_layer is not None) and not self.pre_norm:
+            parent = self.norm2(parent) 
         parent.feat = parent.feat + point.feat[inverse]
 
         if self.traceable:
@@ -596,7 +610,7 @@ class PointBNN(PointModule):
         assert self.cls_mode or self.num_stages == len(dec_num_head) + 1
         assert self.cls_mode or self.num_stages == len(dec_patch_size) + 1
 
-        bn_layer = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
+        bn_layer = partial(nn.BatchNorm1d, eps=1e-2, momentum=0.05)
         ln_layer = nn.LayerNorm
         act_layer = nn.GELU
 
@@ -623,7 +637,7 @@ class PointBNN(PointModule):
                         in_channels=enc_channels[s - 1],
                         out_channels=enc_channels[s],
                         stride=stride[s - 1],
-                        norm_layer=bn_layer,
+                        norm_layer=ln_layer,
                         act_layer=act_layer,
                         shuffle_orders=shuffle_orders,
                         n_components=n_components,
@@ -685,7 +699,7 @@ class PointBNN(PointModule):
                         in_channels=dec_channels[s + 1],
                         skip_channels=enc_channels[s],
                         out_channels=dec_channels[s],
-                        norm_layer=bn_layer,
+                        norm_layer=ln_layer,
                         act_layer=act_layer,
                         n_components=n_components,
                         prior_mean=prior_mean,
