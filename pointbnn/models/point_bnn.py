@@ -489,12 +489,17 @@ class SerializedUnpooling(PointModule):
         # )
 
         if norm_layer is not None:
+<<<<<<< HEAD
             if self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(in_channels))
                 self.norm1 = PointSequential(norm_layer(in_channels))
             elif not self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(out_channels))
                 self.norm1 = PointSequential(norm_layer(out_channels))
+=======
+            self.proj.add(norm_layer(out_channels))
+            self.proj_skip.add(norm_layer(out_channels))
+>>>>>>> 028e69569bd74b490d0bf5cf524c7dca3f65a6b2
         if act_layer is not None:
             self.proj.add(act_layer())
             self.proj_skip.add(act_layer())
@@ -502,6 +507,12 @@ class SerializedUnpooling(PointModule):
         self.traceable = traceable
 
     def forward(self, point):
+        for module in self.proj.modules():
+            if isinstance(module, nn.BatchNorm1d):
+                module.running_var.data = torch.clamp(module.running_var.data, max=500)
+        for module in self.proj_skip.modules():
+            if isinstance(module, nn.BatchNorm1d):
+                module.running_var.data = torch.clamp(module.running_var.data, max=500)
         assert "pooling_parent" in point.keys()
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
