@@ -3,12 +3,12 @@ ROOT_DIR=$(pwd)
 PYTHON=python
 TRAIN_CODE=train.py
 
-DATASET=ModelNet40
-CONFIG=exp0
-EXP_NAME=exp0
+DATASET=S3DIS
+CONFIG=exp1
+EXP_NAME=exp1
 
 WEIGHT=None
-RESUME=false
+RESUME=true
 FINETUNE=false
 GPU=None
 
@@ -64,5 +64,5 @@ else
     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
     --config-file "$CONFIG_DIR" \
     --num-gpus "$GPU" \
-    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT" finetune="FINETUNE"
+    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT" finetune="$FINETUNE"
 fi
