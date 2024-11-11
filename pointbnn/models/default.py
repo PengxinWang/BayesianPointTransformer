@@ -103,6 +103,20 @@ class BayesSegmentor(nn.Module):
         entropy = torch.mean(torch.stack([m._entropy() for m in self.sto_layers]))
         return (kl, entropy)
 
+    def reshape_samples(self, seg_logits, offsets):
+        num_point_clouds = offsets.shape[0] // self.n_samples
+        seg_logits_all = []
+        begin_index = 0
+        for i in range(num_point_clouds):
+            end_idx = offsets[(i+1) * self.n_samples - 1].item()
+            seg_logits_copies = seg_logits[begin_index: end_idx]
+            n_points = int((end_idx - begin_index) / self.n_samples)
+            seg_logits_copies = seg_logits_copies.view(-1, n_points, seg_logits.shape[1])
+            seg_logits_copies = seg_logits_copies.transpose(0,1)
+            begin_index = end_idx
+            seg_logits_all.append(seg_logits_copies)
+        return torch.cat(seg_logits_all, dim=1)
+
     def forward(self, input_dict):
         point = Point(input_dict)
         if self.training:
@@ -125,7 +139,7 @@ class BayesSegmentor(nn.Module):
             return dict(nll=nll, kl=kl)
         # eval
         elif "segment" in input_dict.keys():
-            seg_logits = seg_logits.view(-1, self.n_samples, seg_logits.size(1))
+            seg_logits = self.reshape_samples(seg_logits, point["offset"])
             mean_seg_logits = torch.mean(seg_logits, dim=1)
             nll = self.criteria(mean_seg_logits, input_dict["segment"])
             kl, entropy = self.kl_and_entropy()
@@ -133,7 +147,7 @@ class BayesSegmentor(nn.Module):
             return dict(nll=nll, kl=kl, seg_logits=mean_seg_logits)
         # test
         else:
-            seg_logits = seg_logits.view(-1, self.n_samples, seg_logits.size(1))
+            seg_logits = self.reshape_samples(seg_logits, point["offset"])
             mean_seg_logits = torch.mean(seg_logits, dim=1)
             predictive = point_wise_entropy(seg_logits, type='predictive')
             aleatoric = point_wise_entropy(seg_logits, type='aleatoric')
