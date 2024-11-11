@@ -350,7 +350,17 @@ class DynamicTrainer(TrainerBase):
                     self.comm_info["input_dict"],
                 ) in self.data_iterator:
                     end_epoch_flag = torch.tensor(int(self.train_loader.end_epoch)).cuda()
-                    dist.all_reduce(end_epoch_flag, op=dist.ReduceOp.SUM)
+                    print(f'check end epcoh flag')
+                    print(f"Rank {dist.get_rank()} out of {dist.get_world_size()}")
+                    print(end_epoch_flag)
+                    print(end_epoch_flag.size(), end_epoch_flag.dtype)
+
+                    print(f'check which is locked')
+                    print(f"Rank {dist.get_rank()} before all_reduce")
+                    if comm.get_world_size() > 1:
+                        dist.barrier()
+                        dist.all_reduce(end_epoch_flag, op=dist.ReduceOp.SUM)
+                    print(f"Rank {dist.get_rank()} after all_reduce")
                     if end_epoch_flag.item()>0:
                         break
                     self.comm_info["batch_size"] = len(self.comm_info["input_dict"]["offset"])
@@ -381,6 +391,7 @@ class DynamicTrainer(TrainerBase):
             total_batch_size = torch.tensor(local_batch_size).cuda()
         dist.all_reduce(total_batch_size, op=dist.ReduceOp.SUM)
         batch_weight = local_batch_size / total_batch_size.item()
+
         loss = loss * batch_weight
         self.optimizer.zero_grad()
         if self.cfg.enable_amp:
@@ -405,7 +416,6 @@ class DynamicTrainer(TrainerBase):
                     self.model.parameters(), self.cfg.clip_grad
                 )
             self.optimizer.step()
-            # self.scheduler.step()
         # hooks during training to inspect memory usage
         for h in self.hooks:
             h.run_step()
@@ -446,11 +456,11 @@ class DynamicTrainer(TrainerBase):
 
     def build_train_loader(self):
         train_data = build_dataset(self.cfg.data.train)
-        # train_data.n_points_statistics(visualize=True, save_path=self.cfg.save_path, after_transform=False)  
-        # train_data.n_points_statistics(visualize=True, save_path=self.cfg.save_path, after_transform=True)
+        train_data.n_points_statistics(visualize=True, save_path=self.cfg.save_path, after_transform=False)  
+        train_data.n_points_statistics(visualize=True, save_path=self.cfg.save_path, after_transform=True)
         self.data_size_ = len(train_data)
         points_per_sample = train_data.get_points_per_sample() * train_data.loop
-        print(f'check points per sample: {points_per_sample}')
+        # print(f'check points per sample: {points_per_sample}')
 
         if comm.get_world_size() > 1:
             train_sampler = CustomedDynamicDistributedSampler(train_data, 

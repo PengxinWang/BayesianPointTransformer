@@ -117,9 +117,6 @@ class CustomedDynamicDistributedSampler(DistributedSampler):
             else:
                 index_ranges[device_id].append(idx)
                 points_per_device[device_id] += num_point
-        print(f'check points_per device: {max_points_per_device}')
-        print(f'check on device 0: {index_ranges[0]}')
-        print(f'check on device 1: {index_ranges[1]}')
         return index_ranges
 
     def __iter__(self):
