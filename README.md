@@ -14,14 +14,19 @@ exp4: bnn, bce, lovasz, rpe, sto_type=['atten','cpe','proj']
 exp5: dynamic batching
 
 ModelNet40:
-exp0: ptv3(vanilla)
-exp1: sto_type = ['head']
-exp2: sto_type = ['atten']
-exp3: sto_type = ['head', 'atten']
+[x] exp0: ptv3(vanilla)
+[x] exp1: sto_type = ['head']
+[x] exp2: sto_type = ['atten']
+[x] exp3: sto_type = ['head', 'atten']
 exp4: sto_type = ['proj']
 exp5: sto_type = ['cpe']
 exp6: sto_type = ['atten', 'proj', 'cpe']
 
+exp7: ptv3(no dropOut, no dropPath)
+exp8: ptv3(dropPath)
+exp9: ptv3(dropOut head)
+exp10: ptv3(dropOut qkv proj)
+exp11: ptv3(dropOut proj)
 ## Data
 
 ### ShapeNet

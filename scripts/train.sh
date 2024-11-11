@@ -4,11 +4,11 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=ModelNet40
-CONFIG=exp0
-EXP_NAME=exp0
+CONFIG=exp6
+EXP_NAME=exp6
 
 WEIGHT=None
-RESUME=false
+RESUME=true
 FINETUNE=false
 GPU=None
 
@@ -64,5 +64,5 @@ else
     $PYTHON "$CODE_DIR"/tools/$TRAIN_CODE \
     --config-file "$CONFIG_DIR" \
     --num-gpus "$GPU" \
-    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT" finetune="FINETUNE"
+    --options save_path="$EXP_DIR" resume="$RESUME" weight="$WEIGHT" finetune="$FINETUNE"
 fi

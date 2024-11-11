@@ -7,8 +7,8 @@ batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
 enable_amp = True # enable automatic mixed precision
-epoch = 20  # total epoch, data loop = epoch // eval_epoch
-eval_epoch = 5  # sche total eval & checkpoint epoch
+epoch = 100  # total epoch, data loop = epoch // eval_epoch
+eval_epoch = 10  # sche total eval & checkpoint epoch
 
 # model settings
 model = dict(
