@@ -59,6 +59,7 @@ class StoLayer(nn.Module):
         prior = D.Normal(self.prior_mean, self.prior_std)
         post_mean = self.post_mean
         post_std = F.softplus(self.post_std)
+        post_std = torch.clamp(post_std, min=1e-6)
         post = D.Normal(post_mean, post_std)
         cross_entropy = (D.kl_divergence(post, prior) + post.entropy()).flatten(1).sum(1).mean()
         kl = cross_entropy - self._entropy_lower_bound(post_mean, post_std)
@@ -74,6 +75,7 @@ class StoLayer(nn.Module):
         """
         mean = self.post_mean
         std = F.softplus(self.post_std)
+        std = torch.clamp(std, min=1e-6)
         entropy = self._entropy_lower_bound(mean, std)
         if entropy_scale is None:
             entropy_scale = 1/(math.sqrt(mean.numel() + 1e-10))
@@ -114,7 +116,9 @@ class StoLinear(nn.Linear, StoLayer):
 
     def forward(self, x):
         gs_indices = torch.arange(x.size(0), dtype=torch.long, device=x.device) % self.n_components
+        self.post_std.data = torch.clamp(self.post_std.data, min=-10.0)
         post_std = F.softplus(self.post_std)
+        post_std = torch.clamp(post_std, min=1e-6)
         epsilon = torch.randn((x.size(0), *self.post_mean.shape[1:]), device=x.device, dtype=x.dtype)
         random_weight = self.post_mean[gs_indices] + post_std[gs_indices] * epsilon
         x = x * random_weight[:, :x.shape[1]]

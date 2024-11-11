@@ -20,7 +20,7 @@ model = dict(
     n_training_samples=1,
     n_samples=4,
     stochastic=True,
-    stochastic_modules=['atten','proj'],
+    stochastic_modules=['head'],
     prior_mean=1.0, 
     prior_std=0.1, 
     post_mean_init=(1.0, 0.1), 
@@ -55,7 +55,7 @@ model = dict(
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
-        stochastic_modules=['atten','proj'],
+        stochastic_modules=['proj'],
         n_components=4,
         prior_mean=1.0,
         prior_std=0.1, 
@@ -73,7 +73,7 @@ model = dict(
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.006, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.006, weight_decay=5e-4)
 scheduler = dict(
     type='OneCycleLR',
     max_lr=[0.006, 0.0006],
