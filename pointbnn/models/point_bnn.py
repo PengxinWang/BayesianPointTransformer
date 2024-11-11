@@ -493,10 +493,10 @@ class SerializedUnpooling(PointModule):
 
             if self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(in_channels))
-                self.norm1 = PointSequential(norm_layer(in_channels))
+                self.norm2 = PointSequential(norm_layer(in_channels))
             elif not self.pre_norm:
                 self.norm1 = PointSequential(norm_layer(out_channels))
-                self.norm1 = PointSequential(norm_layer(out_channels))
+                self.norm2 = PointSequential(norm_layer(out_channels))
 
 
         self.traceable = traceable
