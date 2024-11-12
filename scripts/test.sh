@@ -3,9 +3,9 @@ ROOT_DIR=$(pwd)
 PYTHON=python3
 TEST_CODE=test.py
 
-DATASET=S3DIS
-CONFIG=exp1
-EXP_NAME=exp1
+DATASET=ModelNet40
+CONFIG=exp6
+EXP_NAME=exp6
 WEIGHT=model_best
 GPU=None
 

@@ -7,6 +7,7 @@ num_worker_test = 4
 mix_prob = 0.8
 empty_cache = True
 enable_amp = True
+clip_grad = 1.0
 epoch = 3000 # train (epoch/eval_epoch) epochs and then eval for one epoch
 eval_epoch = 100
 
@@ -52,8 +53,8 @@ model = dict(
         pre_norm=True,
         enable_rpe=True,
         enable_flash=False,
-        upcast_attention=False,
-        upcast_softmax=False,
+        upcast_attention=True,
+        upcast_softmax=True,
         cls_mode=False,
         stochastic_modules=['proj'],
         n_components=4,
@@ -64,16 +65,16 @@ model = dict(
     ),
     criteria=[
         dict(type="CrossEntropyLoss", loss_weight=1., ignore_index=-1),
-        # dict(
-        #     type='LovaszLoss',
-        #     # mode='multiclass',
-        #     loss_weight=1.0,
-        #     ignore_index=-1)
+        dict(
+            type='LovaszLoss',
+            # mode='multiclass',
+            loss_weight=1.0,
+            ignore_index=-1)
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.006, weight_decay=5e-4)
+optimizer = dict(type="Adam", lr=0.006, weight_decay=1e-5)
 scheduler = dict(
     type='OneCycleLR',
     max_lr=[0.006, 0.0006],

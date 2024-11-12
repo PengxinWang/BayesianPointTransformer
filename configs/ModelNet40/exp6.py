@@ -17,7 +17,7 @@ model = dict(
     backbone_embed_dim=512,
     n_components=4,
     n_training_samples=1,
-    n_samples=4,
+    n_samples=8,
     stochastic=True,
     stochastic_modules=['heads'],
     prior_mean=1.0, 
@@ -69,7 +69,7 @@ model = dict(
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
-optimizer = dict(type="Adam", lr=0.001, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.001, weight_decay=0.0005)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.001, 0.0001],

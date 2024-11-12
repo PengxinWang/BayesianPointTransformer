@@ -350,7 +350,6 @@ class SerializedPooling(PointModule):
         out_channels,
         stride=2,
         norm_layer=None,
-        pre_norm=True,
         act_layer=None,
         reduce="max",
         shuffle_orders=True,
@@ -369,7 +368,6 @@ class SerializedPooling(PointModule):
         self.stride = stride
         assert reduce in ["sum", "mean", "min", "max"]
         self.reduce = reduce
-        self.pre_norm = pre_norm
         self.shuffle_orders = shuffle_orders
         self.traceable = traceable
 
@@ -447,7 +445,7 @@ class SerializedPooling(PointModule):
             point_dict["pooling_inverse"] = cluster
             point_dict["pooling_parent"] = point
         point = Point(point_dict)
-        if self.norm is not None and not self.pre_norm:
+        if self.norm is not None:
             point = self.norm(point)
         if self.act is not None:
             point = self.act(point)
@@ -462,7 +460,6 @@ class SerializedUnpooling(PointModule):
         skip_channels,
         out_channels,
         norm_layer=None,
-        pre_norm=True,
         act_layer=None,
         traceable=False,  # record parent and cluster
         n_components=4,
@@ -470,36 +467,30 @@ class SerializedUnpooling(PointModule):
         prior_std=0.40, 
         post_mean_init=(1.0, 0.05), 
         post_std_init=(0.25, 0.10),
-        stochastic_modules=[],
     ):
         super().__init__()
         self.proj = PointSequential(nn.Linear(in_channels, out_channels))
         self.proj_skip = PointSequential(nn.Linear(skip_channels, out_channels))
-        self.pre_norm = pre_norm
-        self.norm_layer = norm_layer
-        if 'pooling' in stochastic_modules:
-            self.proj = PointSequential(
-                StoLinear(in_channels, out_channels, n_components=n_components,
-                prior_mean=prior_mean, prior_std=prior_std,
-                post_mean_init=post_mean_init, post_std_init=post_std_init
-                )
-            )
-            self.proj_skip = PointSequential(
-                StoLinear(in_channels, out_channels, n_components=n_components,
-                prior_mean=prior_mean, prior_std=prior_std,
-                post_mean_init=post_mean_init, post_std_init=post_std_init
-                )
-            )
+
+        # self.proj = PointSequential(
+        #     StoLinear(in_channels, out_channels, n_components=n_components,
+        #     prior_mean=prior_mean, prior_std=prior_std,
+        #     post_mean_init=post_mean_init, post_std_init=post_std_init
+        #     )
+        # )
+        # self.proj_skip = PointSequential(
+        #     StoLinear(in_channels, out_channels, n_components=n_components,
+        #     prior_mean=prior_mean, prior_std=prior_std,
+        #     post_mean_init=post_mean_init, post_std_init=post_std_init
+        #     )
+        # )
 
         if norm_layer is not None:
-
-            if self.pre_norm:
-                self.norm1 = PointSequential(norm_layer(in_channels))
-                self.norm2 = PointSequential(norm_layer(skip_channels))
-            elif not self.pre_norm:
-                self.norm1 = PointSequential(norm_layer(out_channels))
-                self.norm2 = PointSequential(norm_layer(out_channels))
-
+            self.proj.add(norm_layer(out_channels))
+            self.proj_skip.add(norm_layer(out_channels))
+        if act_layer is not None:
+            self.proj.add(act_layer())
+            self.proj_skip.add(act_layer())
 
         self.traceable = traceable
 
@@ -514,16 +505,8 @@ class SerializedUnpooling(PointModule):
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
         inverse = point.pop("pooling_inverse")
-        if (self.norm_layer is not None) and self.pre_norm:
-            point = self.norm1(point)
         point = self.proj(point)
-        if (self.norm_layer is not None) and not self.pre_norm:
-            point = self.norm1(point)
-        if (self.norm_layer is not None) and self.pre_norm:
-            parent = self.norm2(parent)    
         parent = self.proj_skip(parent)
-        if (self.norm_layer is not None) and not self.pre_norm:
-            parent = self.norm2(parent) 
         parent.feat = parent.feat + point.feat[inverse]
 
         if self.traceable:
@@ -707,7 +690,7 @@ class PointBNN(PointModule):
                         in_channels=dec_channels[s + 1],
                         skip_channels=enc_channels[s],
                         out_channels=dec_channels[s],
-                        norm_layer=ln_layer,
+                        norm_layer=bn_layer,
                         act_layer=act_layer,
                         n_components=n_components,
                         prior_mean=prior_mean,

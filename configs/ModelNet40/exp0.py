@@ -1,13 +1,13 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 36 # total batch_size in all gpus
+batch_size = 40 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
 num_worker_test = 4
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
 enable_amp = True # enable automatic mixed precision
-epoch = 100  # total epoch, data loop = epoch // eval_epoch
+epoch = 300  # total epoch, data loop = epoch // eval_epoch
 eval_epoch = 10  # sche total eval & checkpoint epoch
 
 # model settings
@@ -45,7 +45,7 @@ model = dict(
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.3,
         shuffle_orders=True,
         pre_norm=True,
         enable_rpe=True,
@@ -69,7 +69,7 @@ model = dict(
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
-optimizer = dict(type="Adam", lr=0.001, weight_decay=0.00)
+optimizer = dict(type="Adam", lr=0.001, weight_decay=0.005)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.001, 0.0001],
@@ -82,7 +82,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "/userhome/cs2/yanniki/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
+data_root = "/userhome/cs2/pxwang24/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",
