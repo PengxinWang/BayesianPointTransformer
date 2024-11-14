@@ -1,14 +1,15 @@
 _base_ = ["../_base_/default_runtime.py"]
 
 # misc custom setting
-batch_size = 8  # bs: total bs(num_pointclouds_per_epoch) in all gpu
+batch_size = 4  # bs: total bs(num_pointclouds_per_epoch) in all gpu
 num_worker = 8
 num_worker_test = 4
 mix_prob = 0.8
 empty_cache = True
-enable_amp = True
+enable_amp = False
 epoch = 3000 # train (epoch/eval_epoch) epochs and then eval for one epoch
 eval_epoch = 100
+clip_grad = 1.0
 
 # model settings
 model = dict(
@@ -37,11 +38,11 @@ model = dict(
         enc_depths=(2, 2, 2, 6, 2),
         enc_channels=(32, 64, 128, 256, 512),
         enc_num_head=(2, 4, 8, 16, 32),
-        enc_patch_size=(16, 16, 16, 16, 16),
+        enc_patch_size=(64, 64, 64, 64, 64),
         dec_depths=(2, 2, 2, 2),
         dec_channels=(32, 64, 128, 256),
         dec_num_head=(2, 4, 8, 16),
-        dec_patch_size=(16, 16, 16, 16),
+        dec_patch_size=(64, 64, 64, 64),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
@@ -52,8 +53,8 @@ model = dict(
         pre_norm=True,
         enable_rpe=True,
         enable_flash=False,
-        upcast_attention=False,
-        upcast_softmax=False,
+        upcast_attention=True,
+        upcast_softmax=True,
         cls_mode=False,
         stochastic_modules=['proj'],
         n_components=4,
@@ -63,17 +64,17 @@ model = dict(
         post_std_init=(0.1, 0.05),
     ),
     criteria=[
-        dict(type="CrossEntropyLoss", loss_weight=1., ignore_index=-1),
-        # dict(
-        #     type='LovaszLoss',
-        #     # mode='multiclass',
-        #     loss_weight=1.0,
-        #     ignore_index=-1)
+        dict(type="BalancedCELoss", loss_weight=1., ignore_index=-1, beta=0.5),
+        dict(
+            type='LovaszLoss',
+            # mode='multiclass',
+            loss_weight=1.0,
+            ignore_index=-1)
     ],
 )
 
 # scheduler settings
-optimizer = dict(type="Adam", lr=0.006, weight_decay=5e-4)
+optimizer = dict(type="AdamW", lr=0.006, weight_decay=1e-4)
 scheduler = dict(
     type='OneCycleLR',
     max_lr=[0.006, 0.0006],
@@ -87,7 +88,7 @@ param_dicts = [dict(keyword="block", lr=0.0006),
 
 # dataset settings
 dataset_type = "S3DISDataset"
-data_root = "data/s3dis_processed"
+data_root = "data/S3DIS"
 
 data = dict(
     num_classes=13,
@@ -131,7 +132,7 @@ data = dict(
                 return_grid_coord=True,
             ),
             dict(type="SphereCrop", sample_rate=0.6, mode="random"),
-            dict(type="SphereCrop", point_max=51200, mode="random"),
+            dict(type="SphereCrop", point_max=int(102400*1.0), mode="random"),
             dict(type="CenterShift", apply_z=False),
             dict(type="NormalizeColor"),
             dict(type="ToTensor"),

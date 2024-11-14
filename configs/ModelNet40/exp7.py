@@ -1,14 +1,14 @@
 _base_ = ["../_base_/default_runtime.py"]
 # misc custom setting
-batch_size = 30 # total batch_size in all gpus
+batch_size = 10 # total batch_size in all gpus
 num_worker = 8  # total num_workers in all gpus
 num_worker_test = 4
-batch_size_val = 30
-batch_size_test = 30
+batch_size_val = 20
+batch_size_test = 20
 empty_cache = True 
-enable_amp = True # enable automatic mixed precision
-epoch = 20  # total epoch, data loop = epoch // eval_epoch
-eval_epoch = 5  # sche total eval & checkpoint epoch
+enable_amp = False # enable automatic mixed precision
+epoch = 300  # total epoch, data loop = epoch // eval_epoch
+eval_epoch = 30  # sche total eval & checkpoint epoch
 
 # model settings
 model = dict(
@@ -35,26 +35,26 @@ model = dict(
         enc_depths=(2, 2, 2, 6, 2),
         enc_channels=(32, 64, 128, 256, 512),
         enc_num_head=(2, 4, 8, 16, 32),
-        enc_patch_size=(16, 16, 16, 16, 16),
+        enc_patch_size=(128, 128, 128, 128, 128),
         dec_depths=(2, 2, 2, 2),
         dec_channels=(64, 64, 128, 256),
         dec_num_head=(4, 4, 8, 16),
-        dec_patch_size=(16, 16, 16, 16),
+        dec_patch_size=(128, 128, 128, 128),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.05,
         shuffle_orders=True,
         pre_norm=True,
-        enable_rpe=True,
+        enable_rpe=False,
         enable_flash=False,
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=True,
         
-        stochastic_modules=['atten'],
+        stochastic_modules=['proj'],
         n_components=4,
         prior_mean=1.0,
         prior_std=0.1, 
@@ -69,7 +69,7 @@ model = dict(
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
-optimizer = dict(type="Adam", lr=0.001, weight_decay=0.00)
+optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.0005)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.001, 0.0001],
@@ -82,7 +82,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "/userhome/cs2/yanniki/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
+data_root = "/userhome/cs2/alex1206/px_capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",

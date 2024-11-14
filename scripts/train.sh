@@ -4,8 +4,8 @@ PYTHON=python
 TRAIN_CODE=train.py
 
 DATASET=S3DIS
-CONFIG=exp1
-EXP_NAME=exp1
+CONFIG=exp0
+EXP_NAME=exp0
 
 WEIGHT=None
 RESUME=true

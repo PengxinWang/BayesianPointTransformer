@@ -479,7 +479,7 @@ class SerializedUnpooling(PointModule):
         #     )
         # )
         # self.proj_skip = PointSequential(
-        #     StoLinear(in_channels, out_channels, n_components=n_components,
+        #     StoLinear(skip_channels, out_channels, n_components=n_components,
         #     prior_mean=prior_mean, prior_std=prior_std,
         #     post_mean_init=post_mean_init, post_std_init=post_std_init
         #     )
@@ -495,17 +495,18 @@ class SerializedUnpooling(PointModule):
         self.traceable = traceable
 
     def forward(self, point):
-        for module in self.proj.modules():
-            if isinstance(module, nn.BatchNorm1d):
-                module.running_var.data = torch.clamp(module.running_var.data, max=500)
-        for module in self.proj_skip.modules():
-            if isinstance(module, nn.BatchNorm1d):
-                module.running_var.data = torch.clamp(module.running_var.data, max=500)
         assert "pooling_parent" in point.keys()
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
         inverse = point.pop("pooling_inverse")
         point = self.proj(point)
+        # # debug only
+        # for module in self.proj.modules():
+        #     if isinstance(module, nn.BatchNorm1d):
+        #         if torch.isnan(module.running_var.data).all():
+        #             print("NaNs detected after clamp. Exiting.")
+        #             print(module.running_var.data)
+        #             exit()
         parent = self.proj_skip(parent)
         parent.feat = parent.feat + point.feat[inverse]
 
@@ -740,4 +741,7 @@ class PointBNN(PointModule):
         point = self.enc(point)
         if not self.cls_mode:
             point = self.dec(point)
+        # if torch.isnan(point["feat"]).all():
+        #     print('nan detected')
+        #     print(point["feat"])
         return point

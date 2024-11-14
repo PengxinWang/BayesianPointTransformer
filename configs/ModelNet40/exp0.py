@@ -6,7 +6,7 @@ num_worker_test = 4
 batch_size_val = 30
 batch_size_test = 30
 empty_cache = True 
-enable_amp = True # enable automatic mixed precision
+enable_amp = False # enable automatic mixed precision
 epoch = 300  # total epoch, data loop = epoch // eval_epoch
 eval_epoch = 10  # sche total eval & checkpoint epoch
 
@@ -69,7 +69,7 @@ model = dict(
 # train settings
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
-optimizer = dict(type="Adam", lr=0.001, weight_decay=0.005)
+optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.005)
 scheduler = dict(
     type="OneCycleLR",
     max_lr=[0.001, 0.0001],
@@ -82,7 +82,7 @@ param_dicts = [dict(keyword="block", lr=0.0001)]
 
 # dataset settings
 dataset_type = "ModelNetDataset"
-data_root = "/userhome/cs2/pxwang24/capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
+data_root = "/userhome/cs2/alex1206/px_capstone/BayesianPointTransformer/data/modelnet40_normal_resampled"
 cache_data = False
 class_names = [
     "airplane",
@@ -219,16 +219,16 @@ data = dict(
                 ),
             ],
             aug_transform=[
-                # [dict(type="RandomScale", scale=[1, 1], anisotropic=True)],  # 1
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 2
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 3
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 4
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 6
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 7
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 8
-                # [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 9
+                [dict(type="RandomScale", scale=[1, 1], anisotropic=True)],  # 1
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 2
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 3
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 4
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 5
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 6
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 7
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 8
+                [dict(type="RandomScale", scale=[0.8, 1.2], anisotropic=True)],  # 9
             ],
         ),
     ),

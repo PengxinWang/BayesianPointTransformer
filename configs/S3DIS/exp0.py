@@ -7,14 +7,14 @@ test_only = False
 seed = 25326354
 num_worker = 8
 num_worker_test = 4
-batch_size = 8
+batch_size = 4
 batch_size_val = None
 batch_size_test = None
 epoch = 3000
 eval_epoch = 100
 clip_grad = 1.0
 sync_bn = False
-enable_amp = True
+enable_amp = False
 empty_cache = False
 find_unused_parameters = False
 mix_prob = 0.8
@@ -40,12 +40,12 @@ model = dict(
         enc_depths=(2, 2, 2, 6, 2),
         enc_channels=(32, 64, 128, 256, 512),
         enc_num_head=(2, 4, 8, 16, 32),
-        enc_patch_size=(16, 16, 16, 16, 16),
+        enc_patch_size=(64, 64, 64, 64, 64),
         # enc_patch_size=(128, 128, 128, 128, 128),
         dec_depths=(2, 2, 2, 2),
         dec_channels=(64, 64, 128, 256),
         dec_num_head=(4, 4, 8, 16),
-        dec_patch_size=(16, 16, 16, 16),
+        dec_patch_size=(64, 64, 64, 64),
         # dec_patch_size=(128, 128, 128, 128),
         mlp_ratio=4,
         qkv_bias=True,
@@ -130,7 +130,7 @@ data = dict(
                 mode='train',
                 return_grid_coord=True),
             dict(type='SphereCrop', sample_rate=0.6, mode='random'),
-            dict(type='SphereCrop', point_max=51200, mode='random'),
+            dict(type='SphereCrop', point_max=int(102400*1.0), mode='random'),
             dict(type='CenterShift', apply_z=False),
             dict(type='NormalizeColor'),
             dict(type='ToTensor'),

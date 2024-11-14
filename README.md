@@ -6,26 +6,13 @@
 
 ## Experience records:
 S3DIS:
-exp0: ptv3(vanilla), ce, lovasz, rpe
-exp1: bnn, bce, lovasz, rpe, kl_reweighing, sto_type = ['head']
-exp2: bnn, bce, no_norm
-exp3: bnn, bce, ln_norm
-exp4: bnn, bce, bn_norm
+exp0: ptv3(vanilla), ce, lovasz, rpe, patch_size=64, crop_n_points=102400
+exp3: bnn, bce, lovasz, rpe, patch_size=64, sto_type=['heads', 'proj'], crop_n_points=102400
+exp5: bnn, bce, lovasz, no rpe, patch_size=128, sto_type=['heads', 'proj'], crop_n_points=102400
 
 ModelNet40:
-[x] exp0: ptv3(vanilla)
-[x] exp1: sto_type = ['head']
-[x] exp2: sto_type = ['atten']
-[x] exp3: sto_type = ['head', 'atten']
-exp4: sto_type = ['proj']
-exp5: sto_type = ['cpe']
-exp6: sto_type = ['atten', 'proj', 'cpe']
-
-exp7: ptv3(no dropOut, no dropPath)
-exp8: ptv3(dropPath)
-exp9: ptv3(dropOut head)
-exp10: ptv3(dropOut qkv proj)
-exp11: ptv3(dropOut proj)
+exp0: ptv3(vanilla)
+exp7: bnn, no rpe, patch_size=128
 ## Data
 
 ### ShapeNet
