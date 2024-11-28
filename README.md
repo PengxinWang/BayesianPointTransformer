@@ -1,8 +1,52 @@
 # MSc Capstone Project
-- **team member: Pengxin WANG, Shenyang Tong, Jie Yan**
+Improve Point Transformer by Bayesian Perturbation for Uncertainty Quantification
 
-## Preparation
+## Uncertainty Quantification
+- Reference: [What Uncertainty Do we need in Computer Vision?](https://arxiv.org/pdf/1703.04977)
+<img src="imgs/uncertainty_vis.png" alt="UQ" title="UQ" width="300">
+- Aleatoric(Data) vs. Epistemic(Model)
+
+
+
+## Data
+- [ ] ModelNet40
+    - Shape Classification
+- [ ] S3DIS
+    - Indoor Semantic Segmentation
+- [ ] ShapeNet
+    - Part Segmentation
+- how to download?
+    - see scripts/download.sh
+
+### Data Augmentation
+
+## Model Structure
+
+## Methods
+### Rank-one Bayesian Perturbation
+### Loss Function
+
+## File Structure
+**Note:** The framework, taking reference in mmDectection, is a little bit clumsy and complicated. The basic idea is decouple different modules, and 
+```
+├── config/                                                 
+├── data/               
+├── scripts/                                # Launcher
+│   ├── ...
+│   └── train.sh 
+├── tools/                                  # Read Config
+│   ├── ...
+│   └── test.py
+└── pointbnn/                               # Main Modules
+    ├── engines/                            # Trainer, Tester, Hook
+    ├── datasets/                           
+    ├── model/                              
+    └── utils/                              # misc
+```
+
+## Training Details
 - **connect to gpu:** `srun --gres=gpu:2 --cpus-per-task=8 --pty --mail-type=ALL bash`
+- 2 RTX 2080 Ti
 
 ## Experience records:
 S3DIS:
@@ -13,83 +57,6 @@ exp5: bnn, bce, lovasz, no rpe, patch_size=128, sto_type=['heads', 'proj'], crop
 ModelNet40:
 exp0: ptv3(vanilla)
 exp7: bnn, no rpe, patch_size=128
-## Data
-
-### ShapeNet
-- download
-
-  link: https://pan.baidu.com/s/1wRA7zPytCCBx9b_jDjiVEg?pwd=wl08 
-  password: wl08 
-
-### Data Augmentation
-
-### Post Processing
-
-## Model Structure
-- **Model size**
-    - (cls_ptv3_base.py) n_params: about 40M
-    - (cls_ptv3_small.py) n_params: about 9M(9792296)
-    - (semseg_ptv3_small.py) n_params: about 10M(10379109)
-    
-## Methods
-### Serialization
-
-### Positional Embedding
-- **RPE(Relative Positional Embedding):**
-
-- **SubMConv3D(Submanimold Sparse Convolution):** 
-    - [Original Paper](https://arxiv.org/pdf/1711.10275)
-    - [Official Document](https://github.com/traveller59/spconv/blob/master/docs/USAGE.md)
-    - input_feat.shape = output_feat.shape
-
-### Loss Function
-
-## Evaluation
-
-### Shape Classification
-- **Note:** 'Acc' here is actually recall, calculated by TP/TP+FN; IoU is calculated by TP/TP+FP+FN
-- metrics: mAcc, allAcc, mIoU
-
-## Visualization
-
-## File Structure
-```
-├── config/
-├── data/
-├── scripts/                                
-│   ├── ...
-│   └── train.sh 
-├── tools/                                 
-│   ├── ...
-│   └── test.py
-└── weaver/   
-    ├── __init__.py
-    ├── engines/                           # hooks, trainers, testers, ddp laucher...
-    │   ├── hooks/
-    │   │   ├── ...
-    │   │   └── evaluator.py 
-    │   ├── ...
-    │   └── test.py 
-    ├── datasets/                          # dataset, transform...
-    │   ├── __init__.py
-    │   ├── dataset.py
-    │   ├── ...
-    │   └── transform.py
-    ├── model/
-    │   ├── losses/
-    │   ├── norm/                          # pdnorm
-    │   ├── model_utils/                    
-    │   │   ├── structure.py               # Point data dict
-    │   │   ├── ...
-    │   │   └── serialization/             # serialization
-    │   ├── ...
-    │   └── point_transformer_v3.py
-    └── utils/                             # registration, ddp, logger, timer, optimizer...
-        ├── register.py
-        ├── logger.py
-        ├── ...
-        └── misc.py
-```
 
 ## Misc
 - GEMM(General Matrix Multiplication)
@@ -98,11 +65,9 @@ exp7: bnn, no rpe, patch_size=128
 
 - [A nice pre on Point Cloud processing](https://www.youtube.com/watch?v=4gKYE9-YtP0)
 
-- A possible improvement for sparse convolution: [Minkov Engine](https://github.com/NVIDIA/MinkowskiEngine)
+- Learn more about sparse convolution: [Minkov Engine](https://github.com/NVIDIA/MinkowskiEngine)
 
-- do not set batch_size per cpu to 1, small bug will happen on cls_head
-
-- A new paper to read: [superpoint graph clustering](https://arxiv.org/pdf/2401.06704)
+- A nice paper to read: [superpoint graph clustering](https://arxiv.org/pdf/2401.06704)
 
 - How to infuse 2D feature to 3D, and how does it help? [2D fusion](https://www.bilibili.com/read/cv33456793/)
 

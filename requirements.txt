@@ -19,27 +19,3 @@ pip install torch-geometric
 pip install spconv-cu113
 pip install open3d
 pip install seaborn
-
-# conda install pytorch-cluster pytorch-scatter pytorch-sparse -c pyg -y
-
-# A higher version
-wget https://data.pyg.org/whl/torch-2.5.0%2Bcu118/torch_cluster-1.6.3%2Bpt25cu118-cp310-cp310-linux_x86_64.whl
-wget https://data.pyg.org/whl/torch-2.5.0%2Bcu118/torch_scatter-2.1.2%2Bpt25cu118-cp310-cp310-linux_x86_64.whl
-wget https://data.pyg.org/whl/torch-2.5.0%2Bcu118/torch_sparse-0.6.18%2Bpt25cu118-cp310-cp310-linux_x86_64.whl
-
-conda create -n py310 python=3.10 -y
-conda activate py310
-
-conda install ninja -y
-conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0  pytorch-cuda=11.8 -c pytorch -c nvidia
-conda install h5py pyyaml -c anaconda -y
-conda install sharedarray tensorboard tensorboardx yapf addict einops scipy plyfile termcolor timm -c conda-forge -y
-pip install torch_sparse-0.6.18+pt25cu118-cp310-cp310-linux_x86_64.whl
-pip install torch_cluster-1.6.3+pt25cu118-cp310-cp310-linux_x86_64.whl
-pip install torch_scatter-2.1.2+pt25cu118-cp310-cp310-linux_x86_64.whl
-
-
-pip install torch-geometric
-pip install spconv-cu120
-pip install open3d
-pip install seaborn
