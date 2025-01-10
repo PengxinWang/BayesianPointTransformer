@@ -1,4 +1,4 @@
-# MSc Capstone Project
+# Master Capstone Project
 Improve Point Transformer by Bayesian Perturbation for Uncertainty Quantification
 
 ## Uncertainty Quantification
